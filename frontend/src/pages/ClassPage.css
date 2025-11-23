@@ -1,0 +1,62 @@
+.class-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  background: #f7f8fa;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.class-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: #333;
+}
+
+/* Responsive card layout */
+.class-cards {
+  display: grid;
+  grid-template-columns: 1fr; /* Mobile default: one column */
+  gap: 25px;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Bigger screens: two columns */
+@media (min-width: 600px) {
+  .class-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Very large screens: three columns */
+@media (min-width: 1000px) {
+  .class-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.class-card {
+  background: white;
+  padding: 35px 20px;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 120px; /* Makes all cards visually uniform */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Hover animation */
+.class-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  background: #eef3ff;
+}
