@@ -4,6 +4,28 @@ import "./StudentDetailsModal.css";
 const StudentDetailsModal = ({ isOpen, onClose, student, mainHeaders, subHeaders }) => {
   if (!isOpen || !student || !mainHeaders || !subHeaders) return null;
 
+  // Helper functions for mark conversion
+  const convertMidTerm = (marks) => {
+    // Convert marks out of 80 to out of 30
+    const num = parseFloat(marks);
+    if (isNaN(num) || num === 0) return 0;
+    return marks;
+  };
+
+  const convertFinalTerm = (marks) => {
+    // Convert marks out of 80 to out of 50
+    const num = parseFloat(marks);
+    if (isNaN(num) || num === 0) return 0;
+    return marks;
+  };
+
+  const calculateTotal = (internals, mid, final) => {
+    const int = parseFloat(internals) || 0;
+    const midConverted = parseFloat(convertMidTerm(mid)) || 0;
+    const finalConverted = parseFloat(convertFinalTerm(final)) || 0;
+    return (int + midConverted + finalConverted).toFixed(2);
+  };
+
   // Parse basic info (first 8 columns based on your sheet structure)
   const basicInfo = {
     "Student's Name": student[0] || "",
@@ -51,11 +73,11 @@ const StudentDetailsModal = ({ isOpen, onClose, student, mainHeaders, subHeaders
       // Check for Mid-Term (looks for "mid" in the header)
       if (subHeader.includes("mid") && !subHeader.includes("final")) {
         tempBlock.mid = student[i] || "-";
-      } 
+      }
       // Check for Final-Term (looks for "final" in the header)
       else if (subHeader.includes("final")) {
         tempBlock.final = student[i] || "-";
-      } 
+      }
       // Check for Total (100)
       else if (subHeader.includes("total") && subHeader.includes("(100)")) {
         tempBlock.total = student[i] || "-";
@@ -79,13 +101,28 @@ const StudentDetailsModal = ({ isOpen, onClose, student, mainHeaders, subHeaders
     subjectBlocks.push(tempBlock);
   }
 
+  // ✅ Fix: compute mid/final raw + converted fields
+  subjectBlocks.forEach(block => {
+    const midRaw = block.mid || "-";
+    const finalRaw = block.final || "-";
+
+    block.midRaw = midRaw;
+    block.finalRaw = finalRaw;
+
+    block.midConverted = midRaw !== "-" ? convertMidTerm(midRaw) : "-";
+    block.finalConverted = finalRaw !== "-" ? convertFinalTerm(finalRaw) : "-";
+
+    block.total = calculateTotal(block.internals, midRaw, finalRaw);
+  });
+
+
   // Get GRADE and Attendance (last columns)
   const gradeIndex = mainHeaders.findIndex(h => h && h.toString().trim() === "GRADE");
   const attendanceIndex = mainHeaders.findIndex(h => h && h.toString().trim().toLowerCase() === "attendance");
 
   const grade = gradeIndex !== -1 ? student[gradeIndex] || "-" : "-";
   const attendance = attendanceIndex !== -1 ? student[attendanceIndex] || "-" : "-";
-
+  console.log(subjectBlocks);
   return (
     <div className="modal-overlay">
       <div className="modal-box">
@@ -108,20 +145,21 @@ const StudentDetailsModal = ({ isOpen, onClose, student, mainHeaders, subHeaders
             <tr>
               <th>Subject</th>
               <th>Internals (20)</th>
-              <th>Mid-Term (30)</th>
-              <th>Final-Term (50)</th>
+              <th>Mid-Term<br />(Entered/80 → Weighted/30)</th>
+              <th>Final-Term<br />(Entered/80 → Weighted/50)</th>
               <th>Total (100)</th>
             </tr>
           </thead>
 
           <tbody>
             {subjectBlocks.map((subj, index) => (
+
               <tr key={index}>
                 <td>{subj.subject}</td>
                 <td>{subj.internals}</td>
-                <td>{subj.mid}</td>
-                <td>{subj.final}</td>
-                <td>{subj.total}</td>
+                <td>{subj.midConverted}</td>
+                <td>{subj.finalConverted}</td>
+                <td><strong>{subj.total}</strong></td>
               </tr>
             ))}
           </tbody>
