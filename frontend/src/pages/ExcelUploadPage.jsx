@@ -1,8 +1,53 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import "./ExcelUploadPage.css";
-import StudentDetailsModal from "./StudentDetailsModal"; 
+import StudentDetailsModal from "./StudentDetailsModal";
 import { useParams } from "react-router-dom";
+
+const columns = [
+  "name",
+  "fatherName",
+  "motherName",
+  "examRollNo",
+  "class",
+  "dob",
+  "admissionNo",
+  "house",
+  "internalHindi",
+  "midHindi",
+  "endHindi",
+  "totalHindi",
+  "gradeHindi",
+  "internalEng",
+  "midEng",
+  "endEng",
+  "totalEng",
+  "gradeEng",
+  "internalMaths",
+  "midMaths",
+  "endMaths",
+  "totalMaths",
+  "gradeMaths",
+  "internalScience",
+  "midScience",
+  "endScience",
+  "totalScience",
+  "gradeScience",
+  "internalSst",
+  "midSst",
+  "endSst",
+  "totalSst",
+  "gradeSst",
+  "internalSanskrit",
+  "midSanskrit",
+  "endSanskrit",
+  "totalSanskrit",
+  "gradeSanskrit",
+  "overallGrade",
+  "result",
+  "grandTotal"
+];
+
 
 const ExcelUploadPage = () => {
   const { classId } = useParams();
@@ -12,11 +57,34 @@ const ExcelUploadPage = () => {
   const [editMode, setEditMode] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [fullRawData, setFullRawData] = useState([]); // Complete raw rows
-  const [allMainHeaders, setAllMainHeaders] = useState([]); // Row 0
-  const [allSubHeaders, setAllSubHeaders] = useState([]); // Row 1
+  const [selectedStudentIndex, setSelectedStudentIndex] = useState(null);
+  const [fullRawData, setFullRawData] = useState([]);
+  const [allMainHeaders, setAllMainHeaders] = useState([]);
+  const [allSubHeaders, setAllSubHeaders] = useState([]);
+  const [filteredIndices, setFilteredIndices] = useState([]); // ⭐ Store filtered indices
 
-  // Handle Excel Upload
+  // ⭐ Helper function to calculate total marks
+  const calculateTotalForSubject = (row, mainHeaders, subHeaders, subjectName) => {
+    let internals = 0, mid = 0, final = 0;
+
+    for (let i = 0; i < mainHeaders.length; i++) {
+      const mainHeader = mainHeaders[i] ? mainHeaders[i].toString().trim() : "";
+      const subHeader = subHeaders[i] ? subHeaders[i].toString().trim().toLowerCase() : "";
+
+      if (mainHeader === subjectName || (!mainHeader && subjectName)) {
+        if (subHeader.includes("internals")) {
+          internals = parseFloat(row[i]) || 0;
+        } else if (subHeader.includes("mid") && !subHeader.includes("final")) {
+          mid = parseFloat(row[i]) || 0;
+        } else if (subHeader.includes("final")) {
+          final = parseFloat(row[i]) || 0;
+        }
+      }
+    }
+
+    return (internals + mid + final).toFixed(2);
+  };
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -25,93 +93,74 @@ const ExcelUploadPage = () => {
 
     reader.onload = (event) => {
       const data = event.target.result;
-
       const workbook = XLSX.read(data, { type: "binary" });
       const sheetName = workbook.SheetNames[0];
-
       const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
         header: 1,
       });
 
-      // Row 0: Main headers (subjects with merged cells)
-      // Row 1: Sub-headers (Internals, Mid-Term, Final-Term, Total)
       const mainHeaders = sheet[0];
       const subHeaders = sheet[1];
-      const rawRows = sheet.slice(2); // Data starts from row 2
+      const rawRows = sheet.slice(2);
 
       console.log("Main Headers (Row 0):", mainHeaders);
       console.log("Sub Headers (Row 1):", subHeaders);
 
-      // Store complete headers and raw data for modal
       setAllMainHeaders(mainHeaders);
       setAllSubHeaders(subHeaders);
       setFullRawData(rawRows);
 
       const filteredHeaders = [];
-      const filteredIndices = [];
-
-      // Track which subject we're currently in (for merged cells)
+      const indices = [];
       let currentSubject = "";
 
       for (let index = 0; index < mainHeaders.length; index++) {
         const mainHeaderStr = mainHeaders[index] ? mainHeaders[index].toString().trim() : "";
         const subHeaderStr = subHeaders[index] ? subHeaders[index].toString().trim().toLowerCase() : "";
 
-        // Update current subject when we encounter a non-empty main header
         if (mainHeaderStr) {
           currentSubject = mainHeaderStr;
         }
 
-        // Decide whether to keep this column
-
-        // Case 1: Column has both main header and sub-header
         if (mainHeaderStr && subHeaderStr) {
-          // Check if sub-header contains marks breakdown
           if (subHeaderStr.includes("(20)") || subHeaderStr.includes("(30)") ||
             subHeaderStr.includes("(50)") || subHeaderStr.includes("(100)")) {
-            // This is a subject marks column - only keep Total (100)
-            if (subHeaderStr.includes("total") && subHeaderStr.includes("(100)")) {
+            if (subHeaderStr.includes("total")) {
               filteredHeaders.push(`${currentSubject} Total`);
-              filteredIndices.push(index);
+              indices.push(index);
             }
           } else {
-            // This is a basic info column (like Student's Name, Father's Name)
             filteredHeaders.push(mainHeaderStr);
-            filteredIndices.push(index);
-            currentSubject = ""; // Reset subject tracker
+            indices.push(index);
+            currentSubject = "";
           }
         }
-        // Case 2: Empty main header but has sub-header (merged cell continuation)
         else if (!mainHeaderStr && subHeaderStr && currentSubject) {
-          // Check if this is a marks column
           if (subHeaderStr.includes("(20)") || subHeaderStr.includes("(30)") ||
             subHeaderStr.includes("(50)") || subHeaderStr.includes("(100)")) {
-            // Only keep Total (100)
-            if (subHeaderStr.includes("total") && subHeaderStr.includes("(100)")) {
+            if (subHeaderStr.includes("total")) {
               filteredHeaders.push(`${currentSubject} Total`);
-              filteredIndices.push(index);
+              indices.push(index);
             }
           } else {
-            // Standalone sub-header like GRADE, Attendance
             filteredHeaders.push(subHeaders[index].toString().trim());
-            filteredIndices.push(index);
+            indices.push(index);
           }
         }
-        // Case 3: Empty main header and empty sub-header
         else if (!mainHeaderStr && !subHeaderStr) {
-          // Skip empty columns
           continue;
         }
       }
 
       console.log("Filtered Headers:", filteredHeaders);
-      console.log("Filtered Indices:", filteredIndices);
+      console.log("Filtered Indices:", indices);
 
-      // Format rows using only filtered columns
+      setFilteredIndices(indices);
+
       const formatted = rawRows.map((row) => {
         const obj = {};
         filteredHeaders.forEach((header, i) => {
-          const originalIndex = filteredIndices[i];
+          const originalIndex = indices[i];
           obj[header] = row[originalIndex] || "";
         });
         return obj;
@@ -125,35 +174,156 @@ const ExcelUploadPage = () => {
     reader.readAsBinaryString(file);
   };
 
-  // Allow editing inside table
   const handleEdit = (rowIndex, colName, newValue) => {
     const updated = [...excelData];
     updated[rowIndex][colName] = newValue;
     setExcelData(updated);
   };
 
-  // Toggle edit mode
   const toggleEditMode = () => {
     setEditMode(!editMode);
   };
+
+  const transformDataForBackend = () => {
+    // First, let's log to debug
+    console.log("🔍 Debugging Headers:");
+    console.log("Main Headers:", allMainHeaders);
+    console.log("Sub Headers:", allSubHeaders);
+    console.log("First Row Sample:", fullRawData[0]);
+
+    const transformedData = fullRawData.map((row, rowIdx) => {
+      const studentData = {
+        name: row[0] || "",
+        fatherName: row[1] || "",
+        motherName: row[2] || "",
+        examRollNo: row[3] || "",
+        class: row[4] || "",
+        dob: row[5] || "",
+        admissionNo: row[6] || "",
+        house: row[7] || "",
+        subjects: {},
+        overallGrade: null,
+        result: null,
+        grandTotal: null
+      };
+
+      let currentSubject = "";
+      let subjectData = {
+        internals: null,
+        midTerm: null,
+        finalTerm: null,
+        total: null,
+        grade: null
+      };
+
+      // Start from index 8 (after basic info)
+      for (let i = 8; i < row.length; i++) {
+        const mainHeader = allMainHeaders[i] ? allMainHeaders[i].toString().trim() : "";
+        const subHeader = allSubHeaders[i] ? allSubHeaders[i].toString().trim().toLowerCase() : "";
+        const cellValue = row[i];
+
+        // Log first student for debugging
+        if (rowIdx === 0) {
+          console.log(`Index ${i}: Main="${mainHeader}" | Sub="${subHeader}" | Value="${cellValue}"`);
+        }
+
+        // Skip empty columns
+        if (!mainHeader && !subHeader) {
+          continue;
+        }
+
+        // Check if this is a subject name (main header exists and is not GRADE/Arts/Sports/Attendance)
+        const isSubjectHeader = mainHeader &&
+          !mainHeader.toLowerCase().includes("grade") &&
+          !mainHeader.toLowerCase().includes("arts") &&
+          !mainHeader.toLowerCase().includes("sports") &&
+          !mainHeader.toLowerCase().includes("attendance");
+
+        // Detect new subject
+        if (isSubjectHeader) {
+          // Save previous subject if it has data
+          if (currentSubject && Object.values(subjectData).some(v => v !== null)) {
+            studentData.subjects[currentSubject] = { ...subjectData };
+          }
+
+          // Check if current column has marks (internals column)
+          if (subHeader.includes("internals") || subHeader.includes("(20)")) {
+            currentSubject = mainHeader;
+            subjectData = {
+              internals: parseFloat(cellValue) || 0,
+              midTerm: null,
+              finalTerm: null,
+              total: null,
+              grade: null
+            };
+          }
+          continue;
+        }
+
+        // If we're in a subject, collect the marks
+        if (currentSubject && !mainHeader) {
+          if (subHeader.includes("mid") && subHeader.includes("(30)")) {
+            subjectData.midTerm = parseFloat(cellValue) || 0;
+          } else if (subHeader.includes("final") && subHeader.includes("(50)")) {
+            subjectData.finalTerm = parseFloat(cellValue) || 0;
+          } else if (subHeader.includes("total") && subHeader.includes("(100)")) {
+            subjectData.total = parseFloat(cellValue) || 0;
+          } else if (!subHeader.includes("(") && subHeader) {
+            // This is the grade (no parentheses)
+            subjectData.grade = cellValue || "";
+            // Save subject after grade
+            studentData.subjects[currentSubject] = { ...subjectData };
+            currentSubject = ""; // Reset
+          }
+        }
+
+        // Handle GRADE column (overall grade)
+        if (mainHeader.toLowerCase().includes("grade") && !subHeader.includes("(")) {
+          studentData.overallGrade = cellValue || "";
+        }
+
+        // Handle Arts/Sports column (result)
+        if (subHeader.toLowerCase().includes("arts") || subHeader.toLowerCase().includes("sports")) {
+          studentData.result = cellValue || "";
+        }
+
+        // Handle Attendance/Grand Total (last number column)
+        if (subHeader.toLowerCase().includes("attendance") || i === row.length - 1) {
+          const numValue = parseFloat(cellValue);
+          if (!isNaN(numValue)) {
+            studentData.grandTotal = numValue;
+          }
+        }
+      }
+
+      return studentData;
+    });
+
+    return transformedData;
+  };
+
+  const handleSubmit = () => {
+    const transformedData = transformDataForBackend();
+    console.log("📄 TRANSFORMED DATA FOR BACKEND:", JSON.stringify(transformedData, null, 2));
+  };
+
+
 
   return (
     <div className="excel-container">
       <h1 className="excel-title">Upload Excel – Class {classId}</h1>
 
-      {/* Upload Box */}
       <div className="upload-box">
         <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} />
       </div>
 
-      {/* Show table only if data exists */}
       {excelData.length > 0 && (
         <>
           <div className="header-controls">
             <h2 className="preview-title">Preview & Edit Data</h2>
-            <button className="edit-toggle-btn" onClick={toggleEditMode}>
+            {/* <button className="edit-toggle-btn" onClick={toggleEditMode}>
               {editMode ? "🔒 Lock Table" : "✏️ Enable Editing"}
-            </button>
+            </button> */}
           </div>
 
           <div className="table-container">
@@ -181,12 +351,12 @@ const ExcelUploadPage = () => {
                       </td>
                     ))}
 
-                    {/* Details button */}
                     <td>
                       <button
                         className="details-btn"
                         onClick={() => {
                           setSelectedStudent(fullRawData[rowIndex]);
+                          setSelectedStudentIndex(rowIndex);
                           setModalOpen(true);
                         }}
                       >
@@ -207,7 +377,7 @@ const ExcelUploadPage = () => {
             subHeaders={allSubHeaders}
           />
 
-          <button className="submit-btn">Submit Data</button>
+          <button className="submit-btn" onClick={handleSubmit}>Submit Data</button>
         </>
       )}
     </div>
