@@ -3,6 +3,19 @@ import * as XLSX from "xlsx";
 import "./ExcelUploadPage.css";
 import StudentDetailsModal from "./StudentDetailsModal";
 import { useParams } from "react-router-dom";
+import axios from "axios";
+
+
+const excelDateToJS = (serial) => {
+  console.log("hellwo calling .... ", serial);
+  if (!serial || isNaN(serial)) return serial;
+  console.log("hellwo calling .... ");
+  const excelEpoch = new Date(1899, 11, 30);
+  const jsDate = new Date(excelEpoch.getTime() + serial * 86400000);
+  console.log(jsDate.toISOString().split("T")[0]);
+  return jsDate.toISOString().split("T")[0]; // YYYY-MM-DD
+};
+
 
 const columns = [
   "name",
@@ -53,7 +66,7 @@ const ExcelUploadPage = () => {
   const { classId } = useParams();
 
   const [excelData, setExcelData] = useState([]);
-  const [columns, setColumns] = useState([]);
+  const [tableHeaders, setTableHeaders] = useState([]);
   const [editMode, setEditMode] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -166,7 +179,7 @@ const ExcelUploadPage = () => {
         return obj;
       });
 
-      setColumns(filteredHeaders);
+      setTableHeaders(filteredHeaders);
       setExcelData(formatted);
       console.log("Formatted Data:", formatted);
     };
@@ -184,6 +197,7 @@ const ExcelUploadPage = () => {
     setEditMode(!editMode);
   };
 
+  // ⭐ Add this function to your component
   const transformDataForBackend = () => {
     // First, let's log to debug
     console.log("🔍 Debugging Headers:");
@@ -198,7 +212,7 @@ const ExcelUploadPage = () => {
         motherName: row[2] || "",
         examRollNo: row[3] || "",
         class: row[4] || "",
-        dob: row[5] || "",
+        dob: excelDateToJS(row[5]) || "",
         admissionNo: row[6] || "",
         house: row[7] || "",
         subjects: {},
@@ -302,11 +316,175 @@ const ExcelUploadPage = () => {
     return transformedData;
   };
 
-  const handleSubmit = () => {
+  // ⭐ Update your handleSubmit function
+  const handleSubmit = async () => {
     const transformedData = transformDataForBackend();
     console.log("📄 TRANSFORMED DATA FOR BACKEND:", JSON.stringify(transformedData, null, 2));
+
+    // ⭐ VALIDATION BEFORE SENDING
+    const validation = validateAllStudents(transformedData);
+
+    if (!validation.isValid) {
+      console.error("❌ VALIDATION FAILED:", validation.errors);
+
+      // Show error to user
+      alert(
+        `⚠️ Validation Failed!\n\n` +
+        `Found ${validation.errors.length} error(s):\n\n` +
+        validation.errors.slice(0, 10).join("\n") +
+        (validation.errors.length > 10
+          ? `\n\n...and ${validation.errors.length - 10} more errors`
+          : "")
+      );
+
+      return; // Don't proceed with API call
+    }
+
+    console.log("✅ VALIDATION PASSED!");
+    console.log(transformedData);
+    // ⭐ Now send to backend with Axios
+    try {
+      const response = await axios.post("http://localhost:5000/api/students/bulk", {
+        classId: classId,
+        students: transformedData,
+      });
+
+      // Axios automatically parses JSON
+      const result = response.data;
+
+      alert(`✅ Success! ${result.count} students uploaded successfully!`);
+      console.log("✅ UPLOAD SUCCESS:", result);
+    } catch (error) {
+      if (error.response) {
+        // Server responded with a status other than 2xx
+        alert(`❌ Upload Failed: ${error.response.data.message || "Unknown error"}`);
+        console.error("❌ UPLOAD ERROR:", error.response.data);
+      } else if (error.request) {
+        // Request was made but no response received
+        alert("❌ Network Error: No response from server");
+        console.error("❌ NETWORK ERROR:", error.request);
+      } else {
+        // Something else happened
+        alert(`❌ Error: ${error.message}`);
+        console.error("❌ ERROR:", error.message);
+      }
+    }
   };
 
+
+  const validateMarks = (value, max, fieldName) => {
+    const num = parseFloat(value);
+
+    if (isNaN(num)) {
+      return { valid: false, error: `${fieldName} must be a number` };
+    }
+
+    if (num < 0) {
+      return { valid: false, error: `${fieldName} cannot be negative` };
+    }
+
+    if (num > max) {
+      return { valid: false, error: `${fieldName} cannot exceed ${max}` };
+    }
+
+    return { valid: true, value: num };
+  };
+
+  const validateSubject = (subjectName, subjectData) => {
+    const errors = [];
+
+    const internalsValidation = validateMarks(subjectData.internals, 20, `${subjectName} - Internals`);
+    if (!internalsValidation.valid) errors.push(internalsValidation.error);
+
+    const midTermValidation = validateMarks(subjectData.midTerm, 30, `${subjectName} - Mid Term`);
+    if (!midTermValidation.valid) errors.push(midTermValidation.error);
+
+    const finalTermValidation = validateMarks(subjectData.finalTerm, 50, `${subjectName} - Final Term`);
+    if (!finalTermValidation.valid) errors.push(finalTermValidation.error);
+
+    const totalValidation = validateMarks(subjectData.total, 100, `${subjectName} - Total`);
+    if (!totalValidation.valid) errors.push(totalValidation.error);
+
+    if (internalsValidation.valid && midTermValidation.valid && finalTermValidation.valid && totalValidation.valid) {
+      const calculatedTotal = internalsValidation.value + midTermValidation.value + finalTermValidation.value;
+      if (Math.abs(calculatedTotal - totalValidation.value) > 0.01) {
+        errors.push(`${subjectName} - Total (${totalValidation.value}) doesn't match sum (${calculatedTotal})`);
+      }
+    }
+
+    // const validGrades = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'D', 'E', 'E1'];
+    // if (!validGrades.includes(subjectData.grade)) {
+    //   errors.push(`${subjectName} - Invalid grade: ${subjectData.grade}`);
+    // }
+
+    return errors;
+  };
+
+  const validateStudent = (student, rowIndex) => {
+    const errors = [];
+    const studentIdentifier = `Row ${rowIndex + 1} (${student.name || 'Unknown'})`;
+
+    if (!student.name || student.name.trim() === '') {
+      errors.push(`${studentIdentifier} - Name is required`);
+    }
+
+    if (!student.examRollNo || isNaN(student.examRollNo)) {
+      errors.push(`${studentIdentifier} - Valid exam roll number is required`);
+    }
+
+    if (!student.admissionNo || isNaN(student.admissionNo)) {
+      errors.push(`${studentIdentifier} - Valid admission number is required`);
+    }
+
+    const validHouses = ['Vallabhi', 'Pushpagiri', 'Takshshila', 'Nalanda'];
+    if (student.house && !validHouses.includes(student.house)) {
+      errors.push(`${studentIdentifier} - Invalid house: ${student.house}`);
+    }
+
+    if (!student.subjects || Object.keys(student.subjects).length === 0) {
+      errors.push(`${studentIdentifier} - At least one subject is required`);
+    } else {
+      for (const [subjectName, subjectData] of Object.entries(student.subjects)) {
+        const subjectErrors = validateSubject(subjectName, subjectData);
+        errors.push(...subjectErrors.map(err => `${studentIdentifier} - ${err}`));
+      }
+    }
+
+    return errors;
+  };
+
+  const validateAllStudents = (students) => {
+    const allErrors = [];
+    const rollNoMap = new Map();
+    const admissionNoMap = new Map();
+
+    students.forEach((student, index) => {
+      const studentErrors = validateStudent(student, index);
+      allErrors.push(...studentErrors);
+
+      if (student.examRollNo) {
+        if (rollNoMap.has(student.examRollNo)) {
+          allErrors.push(`Duplicate Exam Roll No: ${student.examRollNo} at rows ${rollNoMap.get(student.examRollNo) + 1} and ${index + 1}`);
+        } else {
+          rollNoMap.set(student.examRollNo, index);
+        }
+      }
+
+      if (student.admissionNo) {
+        if (admissionNoMap.has(student.admissionNo)) {
+          allErrors.push(`Duplicate Admission No: ${student.admissionNo} at rows ${admissionNoMap.get(student.admissionNo) + 1} and ${index + 1}`);
+        } else {
+          admissionNoMap.set(student.admissionNo, index);
+        }
+      }
+    });
+
+    return {
+      isValid: allErrors.length === 0,
+      errors: allErrors,
+      totalStudents: students.length
+    };
+  };
 
 
   return (
@@ -330,7 +508,7 @@ const ExcelUploadPage = () => {
             <table className="excel-table">
               <thead>
                 <tr>
-                  {columns.map((col, index) => (
+                  {tableHeaders.map((col, index) => (
                     <th key={index}>{col}</th>
                   ))}
                   <th>Actions</th>
@@ -340,7 +518,7 @@ const ExcelUploadPage = () => {
               <tbody>
                 {excelData.map((row, rowIndex) => (
                   <tr key={rowIndex}>
-                    {columns.map((col, colIndex) => (
+                    {tableHeaders.map((col, colIndex) => (
                       <td key={colIndex}>
                         <input
                           value={row[col]}
