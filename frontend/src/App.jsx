@@ -3,6 +3,10 @@ import HomePage from "./components/HomePage.jsx";
 import SecondaryWing from "./pages/SecondaryWing.jsx";
 import ClassPage from "./pages/ClassPage.jsx";
 import ExcelUploadPage from "./pages/ExcelUploadPage.jsx"
+import RegisterTeacher from "./pages/SignUpTeacher.jsx";
+import Signup from "./pages/SignUpTeacher.jsx";
+import VerifyOTP from "./pages/VerifyOtp.jsx";
+
 
 function App() {
   return (
@@ -14,9 +18,13 @@ function App() {
         {/* Example future pages */}
         <Route path="/primary" element={<div>Primary Wing</div>} />
         <Route path="/middle" element={<div>Middle Wing</div>} />
-        <Route path="/secondary" element={<SecondaryWing/>} />
+        <Route path="/secondary" element={<SecondaryWing />} />
         <Route path="/senior-secondary" element={<div>Senior Secondary Wing</div>} />
         <Route path="/class/:classId/excel" element={<ExcelUploadPage />} />
+        <Route path="/register-teacher" element={<RegisterTeacher />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-otp" element={<VerifyOTP/>} />
+
       </Routes>
     </BrowserRouter>
   );

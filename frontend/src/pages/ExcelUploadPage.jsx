@@ -61,6 +61,81 @@ const columns = [
   "grandTotal"
 ];
 
+function detectSubjects(mainHeaders, subHeaders) {
+  const subjects = [];
+  let currentSubject = null;
+
+  for (let i = 0; i < mainHeaders.length; i++) {
+    const header = mainHeaders[i];
+
+    if (header !== null && header !== undefined) {
+      // New subject begins
+      currentSubject = {
+        name: header.trim(),
+        start: i,
+        subHeaders: []
+      };
+      subjects.push(currentSubject);
+    }
+
+    // If we are inside a subject, push this column's sub-header
+    if (currentSubject) {
+      currentSubject.subHeaders.push({
+        index: i,
+        name: subHeaders[i] || null
+      });
+    }
+  }
+
+  return subjects;
+}
+
+
+function parseRows(subjects, rawRows) {
+  return rawRows.map((row) => {
+    const student = {
+      name: row[0],
+      fatherName: row[1],
+      motherName: row[2],
+      examRollNo: row[3],
+      class: row[4],
+      admissionNo: row[5],
+      house: row[6],
+      subjects: {},
+      grade: null,
+      attendance: null
+    };
+
+    // Loop through each subject group
+    subjects.forEach((subj) => {
+      const subjectName = subj.name;
+
+      // Skip subjects with no marks (all blank)
+      const values = subj.subHeaders.map((col) => row[col.index]);
+
+      const isEmpty = values.every((v) => v === null || v === "" || v === undefined);
+      if (isEmpty) return;
+
+      // Add subject only if at least one value exists
+      student.subjects[subjectName] = {};
+
+      subj.subHeaders.forEach((col, idx) => {
+        const cleanName = col.name?.replace(/\r?\n|\r/g, "").trim();
+
+        if (cleanName) {
+          student.subjects[subjectName][cleanName] = row[col.index] || null;
+        }
+      });
+    });
+
+    // Last two columns:
+    student.grade = row[row.length - 2];
+    student.attendance = row[row.length - 1];
+
+    return student;
+  });
+}
+
 
 const ExcelUploadPage = () => {
   const { classId } = useParams();
@@ -76,27 +151,7 @@ const ExcelUploadPage = () => {
   const [allSubHeaders, setAllSubHeaders] = useState([]);
   const [filteredIndices, setFilteredIndices] = useState([]); // ⭐ Store filtered indices
 
-  // ⭐ Helper function to calculate total marks
-  const calculateTotalForSubject = (row, mainHeaders, subHeaders, subjectName) => {
-    let internals = 0, mid = 0, final = 0;
-
-    for (let i = 0; i < mainHeaders.length; i++) {
-      const mainHeader = mainHeaders[i] ? mainHeaders[i].toString().trim() : "";
-      const subHeader = subHeaders[i] ? subHeaders[i].toString().trim().toLowerCase() : "";
-
-      if (mainHeader === subjectName || (!mainHeader && subjectName)) {
-        if (subHeader.includes("internals")) {
-          internals = parseFloat(row[i]) || 0;
-        } else if (subHeader.includes("mid") && !subHeader.includes("final")) {
-          mid = parseFloat(row[i]) || 0;
-        } else if (subHeader.includes("final")) {
-          final = parseFloat(row[i]) || 0;
-        }
-      }
-    }
-
-    return (internals + mid + final).toFixed(2);
-  };
+  
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -112,7 +167,16 @@ const ExcelUploadPage = () => {
         header: 1,
       });
 
-      const mainHeaders = sheet[0];
+      // ========== FIX MAIN HEADERS HERE ==========
+      let last = "";
+      const mainHeadersRaw = sheet[0];
+      const mainHeaders = mainHeadersRaw.map((val) => {
+        if (val !== null && val !== undefined && val !== "") {
+          last = val;
+          return val;
+        }
+        return last;
+      });
       const subHeaders = sheet[1];
       const rawRows = sheet.slice(2);
 

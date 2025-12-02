@@ -10,6 +10,7 @@ dotenv.config();
 
 // Import routes
 const studentRoutes = require('./routes/studentRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 // Initialize Express app
 const app = express();
@@ -40,6 +41,8 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/students', studentRoutes);
+app.use("/api/auth", authRoutes);
+
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
