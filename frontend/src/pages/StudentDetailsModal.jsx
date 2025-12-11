@@ -12,45 +12,82 @@ const StudentDetailsModal = ({ isOpen, onClose, student, mainHeaders, subHeaders
 
   if (!isOpen || !student) return null;
 
-  const parseBlocks = (studentRow, mainHdrs, subHdrs) => {
-    const result = [];
+  const parseBlocks = (row, mainHdrs, subHdrs) => {
+    const blocks = [];
     let current = null;
 
-    for (let i = 8; i < mainHdrs.length; i++) {
-      const main = String(mainHdrs[i] || "").trim();
-      const sub = String(subHdrs[i] || "").trim().toLowerCase();
+    console.log("🔍 Starting parse with subHdrs length:", subHdrs.length);
 
-      if (main && sub.includes("internals")) {
-        if (current) result.push(current);
+    // ⭐ STEP 1: Loop through subHdrs.length, NOT mainHdrs.length
+    for (let i = 8; i < subHdrs.length; i++) {
+      const main = (mainHdrs[i] || "").trim();
 
+      // ⭐ STEP 2: Clean up newlines and normalize to lowercase
+      const sub = (subHdrs[i] || "")
+        .replace(/\r?\n|\r/g, " ")  // Remove newlines
+        .trim()
+        .toLowerCase();
+
+      console.log(`Index ${i}: main="${main}" | sub="${sub}" | value="${row[i]}"`);
+
+      // Skip GRADE and Attendance
+      if (main.toLowerCase() === "grade" || main.toLowerCase() === "attendance") {
+        break;
+      }
+
+      // ⭐ STEP 3: Start of new subject (detect by "internals" keyword)
+      if (sub.includes("internals")) {
+        // Save previous subject
+        if (current) {
+          blocks.push(current);
+          console.log("✅ Saved subject:", current.subject);
+        }
+
+        // Start new subject
         current = {
-          subject: main,
-          internals: studentRow[i] || "0",
+          subject: main || "Unknown",
+          internals: row[i] || "0",
           mid: "0",
           final: "0",
           total: "0"
         };
-      } 
-      else if (!main && current) {
-        if (sub.includes("mid") && !sub.includes("final")) {
-          current.mid = studentRow[i] || "0";
-        } else if (sub.includes("final")) {
-          current.final = studentRow[i] || "0";
-        }
+
+        console.log("🆕 New subject started:", main);
+        continue; // Move to next column
+      }
+
+      // If no current subject, skip
+      if (!current) continue;
+
+      // ⭐ STEP 4: Fill mid marks (check for "mid" keyword)
+      if (sub.includes("mid") && !sub.includes("final")) {
+        current.mid = row[i] || "0";
+        console.log(`  📝 Mid marks for ${current.subject}: ${current.mid}`);
+      }
+
+      // ⭐ STEP 5: Fill final marks (check for "final" keyword)
+      else if (sub.includes("final")) {
+        current.final = row[i] || "0";
+        console.log(`  📝 Final marks for ${current.subject}: ${current.final}`);
+      }
+
+      // ⭐ STEP 6: Fill total marks (check for "total" keyword)
+      else if (sub.includes("total")) {
+        current.total = row[i] || "0";
+        console.log(`  📝 Total marks for ${current.subject}: ${current.total}`);
       }
     }
 
-    if (current) result.push(current);
+    // ⭐ STEP 7: Don't forget to save the last subject!
+    if (current) {
+      blocks.push(current);
+      console.log("✅ Saved last subject:", current.subject);
+    }
 
-    result.forEach(b => {
-      const i = parseFloat(b.internals) || 0;
-      const m = parseFloat(b.mid) || 0;
-      const f = parseFloat(b.final) || 0;
-      b.total = (i + m + f).toFixed(2);
-    });
-
-    return result;
+    console.log("🎯 Final blocks:", blocks);
+    return blocks;
   };
+
 
   return (
     <div className="modal-overlay">

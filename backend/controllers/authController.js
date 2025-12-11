@@ -18,6 +18,7 @@ module.exports.signup = async (req, res) => {
     const existingTemp = await TempTeacher.findOne({ email });
 
     if (existingTeacher || existingTemp) {
+      console.log("heeeeeeeeeeeeeeeeerrrrrrrrrrrrrrrrrrrrreeeeeeeeeeeeeeeeeee");
       return res.status(400).json({
         success: false,
         message: "Email already exists. Please login or use a different email."
@@ -90,6 +91,7 @@ module.exports.verifyOtp = async (req, res) => {
 // ─────────────────────────────────────────────
 module.exports.cancelSignup = async (req, res) => {
   try {
+    console.log("getting cancel :: -- >> ")
     const { email } = req.body;
     await TempTeacher.deleteOne({ email });
 
@@ -99,5 +101,52 @@ module.exports.cancelSignup = async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+module.exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // check if email was in signup process
+    const user = await TempTeacher.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Email not found. Please signup again."
+      });
+    }
+
+    // generate new otp
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // save OTP in DB
+    await TempTeacher.findOneAndUpdate(
+      { email },
+      { otp, createdAt: Date.now() },
+      { upsert: true }
+    );
+
+    // send email
+    await sendEmail(
+      email,
+      `Your new OTP is: ${otp}`
+    );
+
+    return res.json({
+      success: true,
+      message: "OTP resent successfully"
+    });
+  } catch (error) {
+    console.log("RESEND OTP ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    });
   }
 };

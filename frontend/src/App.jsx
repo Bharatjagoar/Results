@@ -6,15 +6,17 @@ import ExcelUploadPage from "./pages/ExcelUploadPage.jsx"
 import RegisterTeacher from "./pages/SignUpTeacher.jsx";
 import Signup from "./pages/SignUpTeacher.jsx";
 import VerifyOTP from "./pages/VerifyOtp.jsx";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 function App() {
   return (
+    <>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/class/:classId" element={<ClassPage />} />
-
         {/* Example future pages */}
         <Route path="/primary" element={<div>Primary Wing</div>} />
         <Route path="/middle" element={<div>Middle Wing</div>} />
@@ -27,6 +29,7 @@ function App() {
 
       </Routes>
     </BrowserRouter>
+    <ToastContainer position="top-center" /></>
   );
 }
 

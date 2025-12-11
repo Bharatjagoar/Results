@@ -4,17 +4,36 @@ import "./ExcelUploadPage.css";
 import StudentDetailsModal from "./StudentDetailsModal";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+// import { transformDataForBackend } from "./utils";
 
 
-const excelDateToJS = (serial) => {
-  console.log("hellwo calling .... ", serial);
-  if (!serial || isNaN(serial)) return serial;
-  console.log("hellwo calling .... ");
-  const excelEpoch = new Date(1899, 11, 30);
-  const jsDate = new Date(excelEpoch.getTime() + serial * 86400000);
-  console.log(jsDate.toISOString().split("T")[0]);
-  return jsDate.toISOString().split("T")[0]; // YYYY-MM-DD
+// improved excel date parser (handles serials, Date objects, and ISO-like strings)
+const excelDateToJS = (serialOrVal) => {
+  if (serialOrVal === null || serialOrVal === undefined || serialOrVal === "") return "";
+
+  // If it's already a Date object
+  if (serialOrVal instanceof Date && !isNaN(serialOrVal)) {
+    return serialOrVal.toISOString().split("T")[0];
+  }
+
+  // If it's a number (excel serial)
+  const maybeNum = typeof serialOrVal === "number" ? serialOrVal : parseFloat(serialOrVal);
+  if (!isNaN(maybeNum)) {
+    // Excel serial -> JS date. Using epoch 1899-12-30 (common approach).
+    // NOTE: XLSX sometimes returns floats; integer part is days.
+    const excelEpoch = new Date(1899, 11, 30);
+    const jsDate = new Date(excelEpoch.getTime() + Math.round(maybeNum) * 86400000);
+    if (!isNaN(jsDate)) return jsDate.toISOString().split("T")[0];
+  }
+
+  // If it's a string like "2025-03-10" or "10/03/2025", try Date parse
+  const parsed = new Date(serialOrVal);
+  if (!isNaN(parsed)) return parsed.toISOString().split("T")[0];
+
+  // Fallback: return original value as string
+  return String(serialOrVal);
 };
+
 
 
 const columns = [
@@ -151,7 +170,7 @@ const ExcelUploadPage = () => {
   const [allSubHeaders, setAllSubHeaders] = useState([]);
   const [filteredIndices, setFilteredIndices] = useState([]); // ⭐ Store filtered indices
 
-  
+
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -263,122 +282,101 @@ const ExcelUploadPage = () => {
 
   // ⭐ Add this function to your component
   const transformDataForBackend = () => {
-    // First, let's log to debug
-    console.log("🔍 Debugging Headers:");
-    console.log("Main Headers:", allMainHeaders);
-    console.log("Sub Headers:", allSubHeaders);
-    console.log("First Row Sample:", fullRawData[0]);
+  console.log("🔍 Debugging Headers:");
+  console.log("Main Headers:", allMainHeaders);
+  console.log("Sub Headers:", allSubHeaders);
+  console.log("First Row Sample:", fullRawData[0]);
 
-    const transformedData = fullRawData.map((row, rowIdx) => {
-      const studentData = {
-        name: row[0] || "",
-        fatherName: row[1] || "",
-        motherName: row[2] || "",
-        examRollNo: row[3] || "",
-        class: row[4] || "",
-        dob: excelDateToJS(row[5]) || "",
-        admissionNo: row[6] || "",
-        house: row[7] || "",
-        subjects: {},
-        overallGrade: null,
-        result: null,
-        grandTotal: null
+  // ⭐ STEP 1: Detect subjects dynamically
+  const subjects = [];
+  let currentSubject = null;
+  
+  for (let i = 8; i < allMainHeaders.length; i++) {
+    const mainHeader = allMainHeaders[i] ? allMainHeaders[i].toString().trim() : "";
+    const subHeader = allSubHeaders[i] ? allSubHeaders[i].toString().trim().toLowerCase() : "";
+    
+    // Skip GRADE and Attendance columns
+    if (mainHeader.toLowerCase() === "grade" || mainHeader.toLowerCase() === "attendance") {
+      break;
+    }
+    
+    // New subject detected
+    if (mainHeader && mainHeader !== "") {
+      currentSubject = {
+        name: mainHeader,
+        internalsIndex: i,
+        midTermIndex: i + 1,
+        finalTermIndex: i + 2,
+        totalIndex: i + 3,
+        gradeIndex: i + 4
       };
+      subjects.push(currentSubject);
+    }
+  }
+  
+  console.log("📚 Detected Subjects:", subjects);
 
-      let currentSubject = "";
-      let subjectData = {
-        internals: null,
-        midTerm: null,
-        finalTerm: null,
-        total: null,
-        grade: null
+  // ⭐ STEP 2: Find GRADE, Arts/Sports, and Attendance columns
+  let gradeColumnIndex = -1;
+  let resultColumnIndex = -1;
+  let attendanceColumnIndex = -1;
+  
+  for (let i = 0; i < allMainHeaders.length; i++) {
+    const mainHeader = allMainHeaders[i] ? allMainHeaders[i].toString().trim().toLowerCase() : "";
+    const subHeader = allSubHeaders[i] ? allSubHeaders[i].toString().trim().toLowerCase() : "";
+    
+    if (mainHeader === "grade") {
+      gradeColumnIndex = i;
+    }
+    if (subHeader.includes("arts") || subHeader.includes("sports")) {
+      resultColumnIndex = i;
+    }
+    if (mainHeader === "attendance" || subHeader.includes("attendance")) {
+      attendanceColumnIndex = i;
+    }
+  }
+  
+  console.log(`📍 Column Indices - Grade: ${gradeColumnIndex}, Result: ${resultColumnIndex}, Attendance: ${attendanceColumnIndex}`);
+
+  // ⭐ STEP 3: Transform each row
+  const transformedData = fullRawData.map((row, rowIdx) => {
+    const studentData = {
+      name: row[0] || "",
+      fatherName: row[1] || "",
+      motherName: row[2] || "",
+      examRollNo: row[3] || "",
+      class: row[4] || "",
+      dob: excelDateToJS(row[5]) || "",
+      admissionNo: row[6] || "",
+      house: row[7] || "",
+      subjects: {},
+      overallGrade: gradeColumnIndex >= 0 ? (row[gradeColumnIndex] || "") : "",
+      result: resultColumnIndex >= 0 ? (row[resultColumnIndex] || "") : "",
+      grandTotal: attendanceColumnIndex >= 0 ? (parseFloat(row[attendanceColumnIndex]) || 0) : 0
+    };
+
+    // Parse each subject
+    subjects.forEach((subject) => {
+      const internals = parseFloat(row[subject.internalsIndex]) || 0;
+      const midTerm = parseFloat(row[subject.midTermIndex]) || 0;
+      const finalTerm = parseFloat(row[subject.finalTermIndex]) || 0;
+      const total = parseFloat(row[subject.totalIndex]) || 0;
+      const grade = row[subject.gradeIndex] || "";
+
+      studentData.subjects[subject.name] = {
+        internals,
+        midTerm,
+        finalTerm,
+        total,
+        grade
       };
-
-      // Start from index 8 (after basic info)
-      for (let i = 8; i < row.length; i++) {
-        const mainHeader = allMainHeaders[i] ? allMainHeaders[i].toString().trim() : "";
-        const subHeader = allSubHeaders[i] ? allSubHeaders[i].toString().trim().toLowerCase() : "";
-        const cellValue = row[i];
-
-        // Log first student for debugging
-        if (rowIdx === 0) {
-          console.log(`Index ${i}: Main="${mainHeader}" | Sub="${subHeader}" | Value="${cellValue}"`);
-        }
-
-        // Skip empty columns
-        if (!mainHeader && !subHeader) {
-          continue;
-        }
-
-        // Check if this is a subject name (main header exists and is not GRADE/Arts/Sports/Attendance)
-        const isSubjectHeader = mainHeader &&
-          !mainHeader.toLowerCase().includes("grade") &&
-          !mainHeader.toLowerCase().includes("arts") &&
-          !mainHeader.toLowerCase().includes("sports") &&
-          !mainHeader.toLowerCase().includes("attendance");
-
-        // Detect new subject
-        if (isSubjectHeader) {
-          // Save previous subject if it has data
-          if (currentSubject && Object.values(subjectData).some(v => v !== null)) {
-            studentData.subjects[currentSubject] = { ...subjectData };
-          }
-
-          // Check if current column has marks (internals column)
-          if (subHeader.includes("internals") || subHeader.includes("(20)")) {
-            currentSubject = mainHeader;
-            subjectData = {
-              internals: parseFloat(cellValue) || 0,
-              midTerm: null,
-              finalTerm: null,
-              total: null,
-              grade: null
-            };
-          }
-          continue;
-        }
-
-        // If we're in a subject, collect the marks
-        if (currentSubject && !mainHeader) {
-          if (subHeader.includes("mid") && subHeader.includes("(30)")) {
-            subjectData.midTerm = parseFloat(cellValue) || 0;
-          } else if (subHeader.includes("final") && subHeader.includes("(50)")) {
-            subjectData.finalTerm = parseFloat(cellValue) || 0;
-          } else if (subHeader.includes("total") && subHeader.includes("(100)")) {
-            subjectData.total = parseFloat(cellValue) || 0;
-          } else if (!subHeader.includes("(") && subHeader) {
-            // This is the grade (no parentheses)
-            subjectData.grade = cellValue || "";
-            // Save subject after grade
-            studentData.subjects[currentSubject] = { ...subjectData };
-            currentSubject = ""; // Reset
-          }
-        }
-
-        // Handle GRADE column (overall grade)
-        if (mainHeader.toLowerCase().includes("grade") && !subHeader.includes("(")) {
-          studentData.overallGrade = cellValue || "";
-        }
-
-        // Handle Arts/Sports column (result)
-        if (subHeader.toLowerCase().includes("arts") || subHeader.toLowerCase().includes("sports")) {
-          studentData.result = cellValue || "";
-        }
-
-        // Handle Attendance/Grand Total (last number column)
-        if (subHeader.toLowerCase().includes("attendance") || i === row.length - 1) {
-          const numValue = parseFloat(cellValue);
-          if (!isNaN(numValue)) {
-            studentData.grandTotal = numValue;
-          }
-        }
-      }
-
-      return studentData;
     });
 
-    return transformedData;
-  };
+    return studentData;
+  });
+
+  return transformedData;
+};
 
   // ⭐ Update your handleSubmit function
   const handleSubmit = async () => {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./VerifyOTP.css";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const VerifyOTP = () => {
   const [otp, setOtp] = useState("");
@@ -10,24 +11,39 @@ const VerifyOTP = () => {
 
   const navigate = useNavigate();
   const { state } = useLocation();
-  const email = state?.email; // <-- Email passed from signup
+  const email = state?.email;
 
-  // If user visits page directly → redirect back
   useEffect(() => {
     if (!email) navigate("/signup");
   }, [email, navigate]);
 
-  // Timer
+  useEffect(() => {
+
+    if (!email) {
+      // If someone opens verify page manually or refreshes -> cancel pending signup
+      axios.post("http://localhost:5000/api/auth/cancel", {});
+      navigate("/signup");
+    }
+
+    // CLEANUP on refresh, back, or leaving this page
+    return () => {
+      alert("hellpw from")
+      if (email) {
+        axios.post("http://localhost:5000/api/auth/cancel", { email });
+      }
+    };
+  }, []);
+
+
+  // Timer logic
   useEffect(() => {
     if (timeLeft <= 0) {
+      toast.error("OTP expired. Please try again.");
       navigate("/signup");
       return;
     }
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
+    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [timeLeft, navigate]);
 
@@ -37,39 +53,49 @@ const VerifyOTP = () => {
     return `${min}:${sec < 10 ? "0" : ""}${sec}`;
   };
 
-  // 📌 VERIFY OTP
+  // 🔐 VERIFY OTP
   const handleVerify = async (e) => {
     e.preventDefault();
 
+    if (otp.length !== 6) {
+      toast.error("Please enter a valid 6-digit OTP");
+      return;
+    }
+
     try {
       setLoading(true);
+
       const res = await axios.post("http://localhost:5000/api/auth/verify-otp", {
         email,
         otp,
       });
 
-      alert("OTP Verified Successfully!");
-      navigate("/"); // redirect wherever you want
+      // backend returns success: true
+      if (res.data.success) {
+        toast.success("OTP Verified!");
+        navigate("/");
+      } else {
+        toast.error(res.data.message || "Invalid OTP");
+      }
     } catch (err) {
-      console.log(err);
-      alert(err.response?.data?.message || "OTP verification failed");
+      toast.error(err.response?.data?.message || "Invalid OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  // 📌 RESEND OTP
+  // 🔁 RESEND OTP
   const handleResend = async () => {
     try {
       setTimeLeft(180);
       setOtp("");
 
-      await axios.post("http://localhost:5000/api/auth/signup", { email });
+      await axios.post("http://localhost:5000/api/auth/resend-otp", { email });
 
-      alert("OTP Resent to your email!");
+
+      toast.success("OTP resent successfully!");
     } catch (err) {
-      console.log(err);
-      alert("Failed to resend OTP");
+      toast.error("Failed to resend OTP");
     }
   };
 
@@ -77,7 +103,9 @@ const VerifyOTP = () => {
     <div className="otp-container">
       <div className="otp-box">
         <h2>Verify OTP</h2>
-        <p className="otp-description">Enter the OTP sent to: <b>{email}</b></p>
+        <p className="otp-description">
+          Enter the OTP sent to: <b>{email}</b>
+        </p>
 
         <p className="timer">
           OTP expires in: <span>{formatTime()}</span>

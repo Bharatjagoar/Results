@@ -3,32 +3,33 @@ import "./Signup.css";
 import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
-  const navigate = useNavigate();
-
   const [form, setForm] = useState({
     username: "",
     email: "",
     password: "",
     Confirmpassword: "",
   });
-
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setError("");
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    setLoading(true); // 🔥 Start loader
 
     if (form.password !== form.Confirmpassword) {
       setError("Passwords do not match!");
+      setLoading(false);
       return;
     }
 
     if (form.password.length < 8) {
       setError("Password must be at least 8 characters long.");
+      setLoading(false);
       return;
     }
 
@@ -47,17 +48,16 @@ const Signup = () => {
 
       if (!data.success) {
         setError(data.message || "Something went wrong");
+        setLoading(false);
         return;
       }
 
-      // ⭐ SUCCESS → REDIRECT TO OTP PAGE
-      navigate("/verify-otp", {
-        state: { email: form.email }
-      });
-
+      navigate("/verify-otp", { state: { email: form.email } });
     } catch (err) {
       setError("Server error, please try again later.");
     }
+
+    setLoading(false); // 🔥 Stop loader
   };
 
   return (
@@ -116,7 +116,9 @@ const Signup = () => {
 
           {error && <p className="error-text">{error}</p>}
 
-          <button type="submit" className="auth-btn">Sign Up</button>
+          <button type="submit" className="auth-btn" disabled={loading}>
+            {loading ? "Processing..." : "Sign Up"}
+          </button>
         </form>
 
         <p className="auth-footer">

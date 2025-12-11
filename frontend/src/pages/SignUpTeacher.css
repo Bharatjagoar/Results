@@ -100,3 +100,23 @@
   border: 1px solid #d32f2f !important;
   background: #fff5f5;
 }
+
+.auth-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loader {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  animation: spin 0.8s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
