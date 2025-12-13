@@ -1,6 +1,7 @@
 import React from "react";
 import "./HomePage.css";
 import { useNavigate } from "react-router-dom";
+import Navbar from "./Navbar";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -13,7 +14,10 @@ const HomePage = () => {
   ];
 
   return (
+    <>
+    <Navbar/>
     <div className="home-container">
+      
       <h1 className="home-title">Rukmani Devi Jaipuria Public School</h1>
 
       <div className="cards-container">
@@ -28,6 +32,7 @@ const HomePage = () => {
         ))}
       </div>
     </div>
+    </>
   );
 };
 

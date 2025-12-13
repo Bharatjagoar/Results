@@ -1,14 +1,38 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const TempTeacherSchema = new mongoose.Schema({
-  username: String,
-  email: String,
-  password: String,
-  otp: String,
-  expiresAt: Date,
+  username: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  otp: {
+    type: String,
+    required: true
+  },
+  expiresAt: {
+    type: Date,
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-// Auto delete expired docs after TTL
-TempTeacherSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// ⭐ Hash password before saving - Modern Mongoose syntax (no next needed)
+TempTeacherSchema.pre("save", async function() {
+  if (!this.isModified("password")) return;
+  
+  this.password = await bcrypt.hash(this.password, 10);
+});
 
 module.exports = mongoose.model("TempTeacher", TempTeacherSchema);

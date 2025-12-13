@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./Signup.css";
+import "./SignUpTeacher.css";
 import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
@@ -16,6 +16,9 @@ const Signup = () => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+  const clickme = ()=>{
+    navigate("/login");
+  }
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -122,7 +125,7 @@ const Signup = () => {
         </form>
 
         <p className="auth-footer">
-          Already have an account? <span>Login</span>
+          Already have an account? <span onClick={()=>{clickme()}}>Login</span>
         </p>
       </div>
     </div>

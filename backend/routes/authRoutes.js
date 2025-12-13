@@ -1,5 +1,13 @@
 const express = require("express");
-const { signup, verifyOtp, cancelSignup,resendOtp } = require("../controllers/authController");
+const { 
+  signup, 
+  verifyOtp, 
+  cancelSignup, 
+  resendOtp,
+  checkStatus,
+  login  // ⭐ Add this
+} = require("../controllers/authController");
+const authenticate = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -7,6 +15,15 @@ router.post("/signup", signup);
 router.post("/verify-otp", verifyOtp);
 router.post("/cancel", cancelSignup);
 router.post("/resend-otp", resendOtp);
+router.post("/login", login);  // ⭐ Add this
+router.get("/check-status", checkStatus);
 
+// ⭐ Protected route example (use authenticate middleware)
+router.get("/me", authenticate, (req, res) => {
+  res.json({
+    success: true,
+    user: req.user
+  });
+});
 
 module.exports = router;

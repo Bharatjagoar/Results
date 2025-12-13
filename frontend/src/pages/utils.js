@@ -1,3 +1,5 @@
+const OTP_STORAGE_KEY = "OTP_STORAGE_KEY";
+
 // improved transform - uses tableHeaders + filteredIndices (from handleFileUpload)
 const transformDataForBackend = () => {
   // tableHeaders and filteredIndices are from state
@@ -83,6 +85,61 @@ const transformDataForBackend = () => {
   });
 
   return transformed;
+};
+export const saveOTPState = (email, expiryTime) => {
+  const state = {
+    email,
+    expiryTime, // timestamp in milliseconds
+  };
+  localStorage.setItem(OTP_STORAGE_KEY, JSON.stringify(state));
+};
+
+export const getOTPState = () => {
+  const stored = localStorage.getItem(OTP_STORAGE_KEY);
+  if (!stored) return null;
+  
+  try {
+    const state = JSON.parse(stored);
+    const now = Date.now();
+    
+    // Check if OTP has expired
+    if (state.expiryTime < now) {
+      clearOTPState();
+      return null;
+    }
+    
+    return {
+      email: state.email,
+      timeLeft: Math.floor((state.expiryTime - now) / 1000),
+    };
+  } catch {
+    clearOTPState();
+    return null;
+  }
+};
+
+export const clearOTPState = () => {
+  localStorage.removeItem(OTP_STORAGE_KEY);
+};
+
+// Check if user is already verified
+export const checkUserVerified = async () => {
+  try {
+    const token = localStorage.getItem('authToken'); // Adjust based on your auth implementation
+    if (!token) return false;
+    
+    // Make API call to check if user is verified
+    const response = await fetch('http://localhost:5000/api/auth/check-status', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    return data.isVerified;
+  } catch {
+    return false;
+  }
 };
 
 

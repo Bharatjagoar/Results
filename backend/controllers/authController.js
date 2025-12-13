@@ -1,6 +1,7 @@
 const TempTeacher = require("../models/TempTeacher.js")
-const Teacher =require("../models/Teacher.js") 
+const Teacher = require("../models/Teacher.js")
 const sendEmail = require("../utils/sendEmail.js");
+const { generateToken } = require("../utils/jwt");
 
 // ─────────────────────────────────────────────
 // 1. Signup → Generate OTP
@@ -36,7 +37,7 @@ module.exports.signup = async (req, res) => {
       otp,
       expiresAt: new Date(Date.now() + 3 * 60 * 1000), // expires in 3 mins
     });
-
+    console.log("helow")
     // 5️⃣ Send OTP email
     await sendEmail(email, otp);
 
@@ -55,6 +56,7 @@ module.exports.signup = async (req, res) => {
 };
 
 
+
 // ─────────────────────────────────────────────
 // 2. Verify OTP
 // ─────────────────────────────────────────────
@@ -70,16 +72,42 @@ module.exports.verifyOtp = async (req, res) => {
     if (record.otp !== otp)
       return res.json({ success: false, message: "Invalid OTP" });
 
-    // Move to Teacher collection
+    // ⭐ Create teacher instance
+    const teacher = new Teacher({
+      username: record.username,
+      email: record.email,
+      password: record.password, // Already hashed
+    });
+
+    // ⭐ Mark password as not modified to skip re-hashing
+    teacher.markModified('password');
+    teacher.$isNew = false; // Prevent pre-save hook
+
+    // Actually, better approach:
     await Teacher.create({
       username: record.username,
       email: record.email,
-      password: record.password,
+      password: record.password
     });
+
+    // Fetch the created teacher
+    const createdTeacher = await Teacher.findOne({ email });
 
     await TempTeacher.deleteOne({ email });
 
-    return res.json({ success: true, message: "Verification successful" });
+    // ⭐ Generate JWT token
+    const token = generateToken(createdTeacher._id, createdTeacher.email);
+
+    return res.json({
+      success: true,
+      message: "Verification successful",
+      token,
+      user: {
+        id: createdTeacher._id,
+        username: createdTeacher.username,
+        email: createdTeacher.email
+      }
+    });
 
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -147,6 +175,108 @@ module.exports.resendOtp = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Something went wrong"
+    });
+  }
+};
+
+
+// ─────────────────────────────────────────────
+// 4. Check if user is verified
+// ─────────────────────────────────────────────
+module.exports.checkStatus = async (req, res) => {
+  console.log("this is ht eOTP verify !! ");
+  try {
+    const { email } = req.query; // or get from token if using JWT
+
+    // Check if user exists in Teacher collection (verified)
+    const teacher = await Teacher.findOne({ email });
+
+    if (teacher) {
+      return res.json({
+        success: true,
+        isVerified: true,
+        email: teacher.email
+      });
+    }
+
+    // Check if still in temp (pending verification)
+    const tempTeacher = await TempTeacher.findOne({ email });
+
+    if (tempTeacher) {
+      return res.json({
+        success: true,
+        isVerified: false,
+        email: tempTeacher.email,
+        hasPendingOTP: true
+      });
+    }
+
+    // User doesn't exist
+    return res.json({
+      success: false,
+      isVerified: false,
+      message: "User not found"
+    });
+
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// 5. Login
+// ─────────────────────────────────────────────
+module.exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log(email, password);
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required"
+      });
+    }
+
+    // Find teacher
+    const teacher = await Teacher.findOne({ email });
+
+    if (!teacher) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await teacher.comparePassword(password);
+    console.log(isPasswordValid);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    // Generate token
+    const token = generateToken(teacher._id, teacher.email);
+
+    return res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: teacher._id,
+        username: teacher.username,
+        email: teacher.email
+      }
+    });
+
+  } catch (error) {
+    console.log("Login Error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
     });
   }
 };

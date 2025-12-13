@@ -4,6 +4,7 @@ import "./ExcelUploadPage.css";
 import StudentDetailsModal from "./StudentDetailsModal";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import Navbar from "../components/Navbar";
 // import { transformDataForBackend } from "./utils";
 
 
@@ -173,102 +174,120 @@ const ExcelUploadPage = () => {
 
 
   const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const reader = new FileReader();
+  const reader = new FileReader();
 
-    reader.onload = (event) => {
-      const data = event.target.result;
-      const workbook = XLSX.read(data, { type: "binary" });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-        header: 1,
-      });
+  reader.onload = (event) => {
+    const data = event.target.result;
+    const workbook = XLSX.read(data, { type: "binary" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+      header: 1,
+    });
 
-      // ========== FIX MAIN HEADERS HERE ==========
-      let last = "";
-      const mainHeadersRaw = sheet[0];
-      const mainHeaders = mainHeadersRaw.map((val) => {
-        if (val !== null && val !== undefined && val !== "") {
-          last = val;
-          return val;
-        }
-        return last;
-      });
-      const subHeaders = sheet[1];
-      const rawRows = sheet.slice(2);
+    // ========== FIX MAIN HEADERS HERE ==========
+    let last = "";
+    const mainHeadersRaw = sheet[0];
+    const mainHeaders = mainHeadersRaw.map((val) => {
+      if (val !== null && val !== undefined && val !== "") {
+        last = val;
+        return val;
+      }
+      return last;
+    });
+    const subHeaders = sheet[1];
+    const rawRows = sheet.slice(2);
 
-      console.log("Main Headers (Row 0):", mainHeaders);
-      console.log("Sub Headers (Row 1):", subHeaders);
+    console.log("Main Headers (Row 0):", mainHeaders);
+    console.log("Sub Headers (Row 1):", subHeaders);
 
-      setAllMainHeaders(mainHeaders);
-      setAllSubHeaders(subHeaders);
-      setFullRawData(rawRows);
+    setAllMainHeaders(mainHeaders);
+    setAllSubHeaders(subHeaders);
+    setFullRawData(rawRows);
 
-      const filteredHeaders = [];
-      const indices = [];
-      let currentSubject = "";
+    // ⭐ NEW FILTERING LOGIC
+    const filteredHeaders = [];
+    const indices = [];
 
-      for (let index = 0; index < mainHeaders.length; index++) {
-        const mainHeaderStr = mainHeaders[index] ? mainHeaders[index].toString().trim() : "";
-        const subHeaderStr = subHeaders[index] ? subHeaders[index].toString().trim().toLowerCase() : "";
+    // First 8 columns are always basic info
+    const basicInfoHeaders = [
+      "Student's Name",
+      "Father's Name", 
+      "Mother's Name",
+      "Exam Roll No.",
+      "Class",
+      "D.O.B",
+      "Admission No.",
+      "House"
+    ];
 
-        if (mainHeaderStr) {
-          currentSubject = mainHeaderStr;
-        }
+    basicInfoHeaders.forEach((header, idx) => {
+      filteredHeaders.push(header);
+      indices.push(idx);
+    });
 
-        if (mainHeaderStr && subHeaderStr) {
-          if (subHeaderStr.includes("(20)") || subHeaderStr.includes("(30)") ||
-            subHeaderStr.includes("(50)") || subHeaderStr.includes("(100)")) {
-            if (subHeaderStr.includes("total")) {
-              filteredHeaders.push(`${currentSubject} Total`);
-              indices.push(index);
-            }
-          } else {
-            filteredHeaders.push(mainHeaderStr);
-            indices.push(index);
-            currentSubject = "";
-          }
-        }
-        else if (!mainHeaderStr && subHeaderStr && currentSubject) {
-          if (subHeaderStr.includes("(20)") || subHeaderStr.includes("(30)") ||
-            subHeaderStr.includes("(50)") || subHeaderStr.includes("(100)")) {
-            if (subHeaderStr.includes("total")) {
-              filteredHeaders.push(`${currentSubject} Total`);
-              indices.push(index);
-            }
-          } else {
-            filteredHeaders.push(subHeaders[index].toString().trim());
-            indices.push(index);
-          }
-        }
-        else if (!mainHeaderStr && !subHeaderStr) {
-          continue;
-        }
+    // ⭐ Detect subjects and their total columns
+    let currentSubject = "";
+    
+    for (let index = 8; index < mainHeaders.length; index++) {
+      const mainHeaderStr = mainHeaders[index] ? mainHeaders[index].toString().trim() : "";
+      const subHeaderStr = subHeaders[index] ? subHeaders[index].toString().trim().toLowerCase() : "";
+
+      console.log(`Index ${index}: main="${mainHeaderStr}" | sub="${subHeaderStr}"`);
+
+      // Skip GRADE and Attendance in main headers
+      if (mainHeaderStr.toLowerCase() === "grade" || mainHeaderStr.toLowerCase() === "attendance") {
+        filteredHeaders.push(mainHeaderStr);
+        indices.push(index);
+        continue;
       }
 
-      console.log("Filtered Headers:", filteredHeaders);
-      console.log("Filtered Indices:", indices);
+      // Update current subject when we see a new main header
+      if (mainHeaderStr && !mainHeaderStr.toLowerCase().includes("class")) {
+        currentSubject = mainHeaderStr;
+      }
 
-      setFilteredIndices(indices);
+      // Check if this is a Total column
+      const cleanSubHeader = subHeaderStr.replace(/\r?\n|\r/g, " ").trim();
+      
+      if (cleanSubHeader.includes("total") && cleanSubHeader.includes("(100)")) {
+        filteredHeaders.push(`${currentSubject} Total`);
+        indices.push(index);
+        console.log(`✅ Added Total column for ${currentSubject} at index ${index}`);
+      }
+      // Also include non-subject columns (like Arts, Sports, etc.)
+      else if (cleanSubHeader && !cleanSubHeader.includes("(20)") && 
+               !cleanSubHeader.includes("(30)") && 
+               !cleanSubHeader.includes("(50)") &&
+               !cleanSubHeader.includes("(100)")) {
+        filteredHeaders.push(cleanSubHeader);
+        indices.push(index);
+      }
+    }
 
-      const formatted = rawRows.map((row) => {
-        const obj = {};
-        filteredHeaders.forEach((header, i) => {
-          const originalIndex = indices[i];
-          obj[header] = row[originalIndex] || "";
-        });
-        return obj;
+    console.log("✅ Filtered Headers:", filteredHeaders);
+    console.log("✅ Filtered Indices:", indices);
+
+    setFilteredIndices(indices);
+
+    const formatted = rawRows.map((row) => {
+      const obj = {};
+      filteredHeaders.forEach((header, i) => {
+        const originalIndex = indices[i];
+        obj[header] = row[originalIndex] || "";
       });
+      return obj;
+    });
 
-      setTableHeaders(filteredHeaders);
-      setExcelData(formatted);
-      console.log("Formatted Data:", formatted);
-    };
-
-    reader.readAsBinaryString(file);
+    setTableHeaders(filteredHeaders);
+    setExcelData(formatted);
+    console.log("✅ Formatted Data:", formatted);
   };
+
+  reader.readAsBinaryString(file);
+};
 
   const handleEdit = (rowIndex, colName, newValue) => {
     const updated = [...excelData];
@@ -550,6 +569,8 @@ const ExcelUploadPage = () => {
 
 
   return (
+    <>
+    <Navbar/>
     <div className="excel-container">
       <h1 className="excel-title">Upload Excel – Class {classId}</h1>
 
@@ -621,6 +642,7 @@ const ExcelUploadPage = () => {
         </>
       )}
     </div>
+    </>
   );
 };
 

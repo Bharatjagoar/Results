@@ -1,9 +1,50 @@
-const mongoose =require("mongoose")
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const TeacherSchema = new mongoose.Schema({
-  username: String,
-  email: String,
-  password: String,
+  username: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-module.exports= mongoose.model("Teacher", TeacherSchema);
+// ⭐ Hash password only if it's not already a bcrypt hash
+TeacherSchema.pre("save", async function () {
+  if (!this.isModified("password")) {
+    return;
+  }
+
+  // ⭐ Check if password is already a bcrypt hash (starts with $2a$ or $2b$)
+  const isBcryptHash = /^\$2[aby]\$/.test(this.password);
+  
+  if (isBcryptHash) {
+    console.log("Password already hashed, skipping...");
+    return; // Skip hashing if already hashed
+  }
+
+  console.log("Hashing new password...");
+  this.password = await bcrypt.hash(this.password, 10);
+});
+
+// Method to compare passwords
+TeacherSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = mongoose.model("Teacher", TeacherSchema);
