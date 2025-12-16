@@ -1,6 +1,9 @@
 .navbar {
   width: 100%;
-  background: #764ba2;
+  background: rgba(118, 75, 162, 0.2);
+  /* semi-transparent */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
@@ -37,7 +40,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+  background: #764ba2;
   display: flex;
   align-items: center;
   justify-content: center;

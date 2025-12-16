@@ -137,26 +137,38 @@ const bulkUploadStudents = async (req, res) => {
 
 
 const getStudentsByClass = async (req, res) => {
+  console.log("Fetching students for class:", req.params.classId);
   try {
     const { classId } = req.params;
 
     const students = await Student.find({ class: classId })
       .sort({ examRollNo: 1 });
 
+    console.log(`Found ${students.length} students for class ${classId}`);
+
+    // ⭐ Fix: subjects is already a plain object, no need to convert
     const formattedStudents = students.map(student => {
       const studentObj = student.toObject();
-      studentObj.subjects = Object.fromEntries(studentObj.subjects);
+      
+      // If subjects is a Map, convert it
+      if (studentObj.subjects instanceof Map) {
+        studentObj.subjects = Object.fromEntries(studentObj.subjects);
+      }
+      // Otherwise, it's already an object - leave it as is
+      
       return studentObj;
     });
+    console.log("erorr" )
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: students.length,
       data: formattedStudents
     });
 
   } catch (error) {
-    res.status(500).json({
+    console.error("Error fetching students:", error);
+    return res.status(500).json({
       success: false,
       message: 'Error fetching students',
       error: error.message
@@ -199,15 +211,14 @@ const updateStudent = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    if (updateData.subjects) {
-      updateData.subjects = new Map(Object.entries(updateData.subjects));
-    }
+    console.log("Updating student:", id);
+    console.log("Update data:", updateData);
 
     const student = await Student.findByIdAndUpdate(
       id,
       updateData,
       { new: true, runValidators: true }
-    );
+    ).lean(); // ⭐ Returns plain JavaScript object
 
     if (!student) {
       return res.status(404).json({
@@ -216,16 +227,14 @@ const updateStudent = async (req, res) => {
       });
     }
 
-    const studentObj = student.toObject();
-    studentObj.subjects = Object.fromEntries(studentObj.subjects);
-
     res.status(200).json({
       success: true,
       message: 'Student updated successfully',
-      data: studentObj
+      data: student // Already a plain object, no conversion needed
     });
 
   } catch (error) {
+    console.error("Error updating student:", error);
     res.status(500).json({
       success: false,
       message: 'Error updating student',

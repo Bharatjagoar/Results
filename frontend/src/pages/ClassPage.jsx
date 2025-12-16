@@ -10,7 +10,7 @@ const ClassPage = () => {
   const options = [
     { title: "Upload Marks Manually", path: `/class/${classId}/manual` },
     { title: "Upload Marks via Excel", path: `/class/${classId}/excel` },
-    { title: "Upload Students Data (Excel)", path: `/class/${classId}/students` },
+    { title: "Student Records", path: `/class/${classId}/records`}
   ];
 
   return (

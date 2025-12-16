@@ -1,0 +1,259 @@
+import React, { useState, useEffect } from "react";
+import "./StudentEditModal.css";
+import { toast } from "react-toastify";
+
+const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
+  const [editData, setEditData] = useState({});
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (isOpen && student) {
+      setEditData(JSON.parse(JSON.stringify(student)));
+      setErrors({});
+    }
+  }, [isOpen, student]);
+
+  if (!isOpen || !student) return null;
+
+  // Validation function
+  const validateMarks = (subject, field, value) => {
+    const num = parseFloat(value);
+    
+    if (isNaN(num)) {
+      return "Must be a number";
+    }
+
+    if (num < 0) {
+      return "Cannot be negative";
+    }
+
+    const limits = {
+      internals: 20,
+      midTerm: 30,
+      finalTerm: 50,
+      total: 100
+    };
+
+    if (num > limits[field]) {
+      return `Cannot exceed ${limits[field]}`;
+    }
+
+    return null;
+  };
+
+  const handleSubjectChange = (subject, field, value) => {
+    const error = validateMarks(subject, field, value);
+    
+    setErrors(prev => ({
+      ...prev,
+      [`${subject}-${field}`]: error
+    }));
+
+    setEditData(prev => ({
+      ...prev,
+      subjects: {
+        ...prev.subjects,
+        [subject]: {
+          ...prev.subjects[subject],
+          [field]: value === "" ? "" : Number(value)
+        }
+      }
+    }));
+  };
+
+  const calculateTotal = (subject) => {
+    const marks = editData.subjects[subject];
+    return (marks.internals || 0) + (marks.midTerm || 0) + (marks.finalTerm || 0);
+  };
+
+  const hasErrors = () => {
+    return Object.values(errors).some(err => err !== null);
+  };
+
+  const handleSave = () => {
+    if (hasErrors()) {
+      toast.error("Please fix validation errors before saving");
+      return;
+    }
+
+    // Auto-calculate totals before saving
+    const updatedSubjects = { ...editData.subjects };
+    Object.keys(updatedSubjects).forEach(subject => {
+      updatedSubjects[subject].total = calculateTotal(subject);
+    });
+
+    const updatedData = {
+      ...editData,
+      subjects: updatedSubjects
+    };
+
+    onSave(updatedData);
+  };
+
+  return (
+    <div className="student-modal-overlay">
+      <div className="student-modal-box">
+        <div className="modal-header">
+          <h2>Edit Student: {student.name}</h2>
+          <button className="modal-close-btn" onClick={onClose}>✖</button>
+        </div>
+
+        <div className="modal-content">
+          {/* Student Basic Info */}
+          <div className="student-info-card">
+            <div className="info-row">
+              <span className="info-label">Roll No:</span>
+              <span className="info-value">{student.examRollNo}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Class:</span>
+              <span className="info-value">{student.class}</span>
+            </div>
+          </div>
+
+          {/* Subjects Table */}
+          <div className="subjects-section">
+            <h3>Subject-wise Marks</h3>
+            <table className="edit-table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Internals (20)</th>
+                  <th>Mid-Term (30)</th>
+                  <th>Final (50)</th>
+                  <th>Total (100)</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(editData.subjects || {}).map(([subject, marks]) => (
+                  <tr key={subject}>
+                    <td className="subject-name">{subject}</td>
+                    
+                    {/* Internals */}
+                    <td>
+                      <input
+                        type="number"
+                        className={`mark-input ${errors[`${subject}-internals`] ? 'input-error' : ''}`}
+                        value={marks.internals}
+                        onChange={(e) => handleSubjectChange(subject, "internals", e.target.value)}
+                        min="0"
+                        max="20"
+                      />
+                      {errors[`${subject}-internals`] && (
+                        <span className="error-text">{errors[`${subject}-internals`]}</span>
+                      )}
+                    </td>
+
+                    {/* Mid-Term */}
+                    <td>
+                      <input
+                        type="number"
+                        className={`mark-input ${errors[`${subject}-midTerm`] ? 'input-error' : ''}`}
+                        value={marks.midTerm}
+                        onChange={(e) => handleSubjectChange(subject, "midTerm", e.target.value)}
+                        min="0"
+                        max="30"
+                      />
+                      {errors[`${subject}-midTerm`] && (
+                        <span className="error-text">{errors[`${subject}-midTerm`]}</span>
+                      )}
+                    </td>
+
+                    {/* Final */}
+                    <td>
+                      <input
+                        type="number"
+                        className={`mark-input ${errors[`${subject}-finalTerm`] ? 'input-error' : ''}`}
+                        value={marks.finalTerm}
+                        onChange={(e) => handleSubjectChange(subject, "finalTerm", e.target.value)}
+                        min="0"
+                        max="50"
+                      />
+                      {errors[`${subject}-finalTerm`] && (
+                        <span className="error-text">{errors[`${subject}-finalTerm`]}</span>
+                      )}
+                    </td>
+
+                    {/* Total (Auto-calculated) */}
+                    <td className="total-cell">
+                      <strong>{calculateTotal(subject)}</strong>
+                    </td>
+
+                    {/* Grade */}
+                    <td>
+                      <input
+                        type="text"
+                        className="grade-input"
+                        value={marks.grade || ""}
+                        onChange={(e) => setEditData(prev => ({
+                          ...prev,
+                          subjects: {
+                            ...prev.subjects,
+                            [subject]: {
+                              ...prev.subjects[subject],
+                              grade: e.target.value
+                            }
+                          }
+                        }))}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Overall Details */}
+          <div className="overall-section">
+            <div className="overall-row">
+              <label>Grand Total:</label>
+              <input
+                type="number"
+                value={editData.grandTotal || 0}
+                onChange={(e) => setEditData({ ...editData, grandTotal: Number(e.target.value) })}
+              />
+            </div>
+
+            <div className="overall-row">
+              <label>Overall Grade:</label>
+              <input
+                type="text"
+                value={editData.overallGrade || ""}
+                onChange={(e) => setEditData({ ...editData, overallGrade: e.target.value })}
+              />
+            </div>
+
+            <div className="overall-row">
+              <label>Result:</label>
+              <select
+                value={editData.result || ""}
+                onChange={(e) => setEditData({ ...editData, result: e.target.value })}
+              >
+                <option value="">-- Select --</option>
+                <option value="PASS">PASS</option>
+                <option value="FAIL">FAIL</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="modal-footer">
+          <button className="cancel-modal-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button 
+            className="save-modal-btn" 
+            onClick={handleSave}
+            disabled={hasErrors()}
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StudentEditModal;

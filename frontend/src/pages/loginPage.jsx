@@ -52,7 +52,10 @@ const Login = () => {
   };
 
   return (
+    <>
+    
     <div className="login-container">
+      
       <div className="login-box">
         <h2>Teacher Login</h2>
         
@@ -91,6 +94,7 @@ const Login = () => {
         </p>
       </div>
     </div>
+    </>
   );
 };
 

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
 import HomePage from "./components/HomePage.jsx";
-import WingPage from "./pages/WingPage.jsx"; // ⭐ Import WingPage
+import WingPage from "./pages/wingpage.jsx"; // ⭐ Import WingPage
 import ClassPage from "./pages/ClassPage.jsx";
 import ExcelUploadPage from "./pages/ExcelUploadPage.jsx";
 import Signup from "./pages/SignUpTeacher.jsx";
@@ -12,6 +12,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import PublicRoute from "./components/PublicRoute.jsx";
+import ClassRecordsPage from "./pages/ClassRecord.jsx";
 
 function App() {
   return (
@@ -43,6 +44,16 @@ function App() {
               <ExcelUploadPage />
             </ProtectedRoute>
           } />
+
+          <Route
+            path="/class/:classId/records"
+            element={
+              <ProtectedRoute>
+                <ClassRecordsPage />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* Public Routes - redirect to home if authenticated */}
           <Route path="/login" element={
