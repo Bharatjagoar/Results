@@ -1,25 +1,23 @@
-const Student = require('../models/Student.js');
+const Student = require("../models/Student.js");
+const ActivityLogService = require("../services/activityLogService.js");
 
 const bulkUploadStudents = async (req, res) => {
   try {
     const { classId, students } = req.body;
 
-    console.log("Received first student:", students[0]);
-
     if (!students || !Array.isArray(students) || students.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "No student data provided",
+        message: "No student data provided"
       });
     }
 
     // -------------------------------
-    //  FORMAT STUDENTS PROPERLY
+    // FORMAT STUDENTS
     // -------------------------------
     const formattedStudents = students.map((student) => {
       const formattedSubjects = {};
 
-      // Convert subjects object → formatted plain object
       if (student.subjects && typeof student.subjects === "object") {
         Object.entries(student.subjects).forEach(
           ([subjectName, subjectData]) => {
@@ -33,7 +31,7 @@ const bulkUploadStudents = async (req, res) => {
                   subjectData.grade === "" ||
                   subjectData.grade === null
                   ? null
-                  : subjectData.grade,
+                  : subjectData.grade
             };
           }
         );
@@ -48,7 +46,7 @@ const bulkUploadStudents = async (req, res) => {
         dob: student.dob ? String(student.dob) : "",
         admissionNo: Number(student.admissionNo),
         house: student.house,
-        subjects: formattedSubjects, // ✅ Pure object (Mongoose converts to Map)
+        subjects: formattedSubjects,
         overallGrade:
           student.overallGrade === "null" || student.overallGrade === ""
             ? null
@@ -57,83 +55,51 @@ const bulkUploadStudents = async (req, res) => {
           student.result === "null" || student.result === ""
             ? null
             : student.result,
-        grandTotal: Number(student.grandTotal),
+        grandTotal: Number(student.grandTotal)
       };
     });
 
-    console.log(
-      "Formatted subjects (first student):",
-      formattedStudents[0]
-    );
-
-    // -------------------------------
-    //  INSERT MANY
-    // -------------------------------
-    const result = await Student.insertMany(formattedStudents, {
-      ordered: false,
-      rawResult: true,
-    });
-    console.log("res :: ", result);
-
-    console.log("=== FIRST VALIDATION ERROR ===");
-    console.log(JSON.stringify(result.mongoose.validationErrors[0], null, 2));
-
-
-    if (result.insertedCount === 0) {
-      return res.status(400).json({
+    if (!req.user) {
+      return res.status(401).json({
         success: false,
-        message:
-          "No students were uploaded. Possibly validation errors or duplicates.",
-        attempted: students.length,
-        inserted: 0,
+        message: "Unauthorized: user not found"
       });
     }
 
+
+    // -------------------------------
+    // INSERT
+    // -------------------------------
+    const result = await Student.insertMany(formattedStudents, {
+      ordered: false
+    });
+
+    // -------------------------------
+    // ACTIVITY LOG (ONLY ONCE)
+    // -------------------------------
+    console.log(formattedStudents[0]?.class);
+    await ActivityLogService.logBulkUpload({
+      teacherId: req.user.id,
+      classId,
+      count: result.length
+    });
+
     return res.status(201).json({
       success: true,
-      message: `Successfully uploaded ${result.insertedCount} students`,
-      inserted: result.insertedCount,
-      attempted: students.length,
+      message: `Successfully uploaded ${result.length} students`,
+      inserted: result.length
     });
 
   } catch (error) {
     console.error("Bulk upload error:", error);
 
-    // -------------------------------
-    //  PARTIAL SUCCESS HANDLING
-    // -------------------------------
-    if (error.writeErrors || error.insertedDocs) {
-      return res.status(207).json({
-        success: (error.insertedDocs || []).length > 0,
-        message: `Partially uploaded: ${(error.insertedDocs || []).length
-          } succeeded, ${error.writeErrors.length} failed`,
-        inserted: (error.insertedDocs || []).length,
-        failed: error.writeErrors.length,
-        errors: error.writeErrors.map((e) => ({
-          index: e.index,
-          message: e.errmsg,
-        })),
-      });
-    }
-
-    // Duplicate key error
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Duplicate key error - student already exists",
-        error: error.message,
-      });
-    }
-
-    // Generic
     return res.status(500).json({
       success: false,
       message: "Error uploading students",
-      error: error.message,
+      error: error.message
     });
   }
 };
-
 
 
 const getStudentsByClass = async (req, res) => {
@@ -149,16 +115,16 @@ const getStudentsByClass = async (req, res) => {
     // ⭐ Fix: subjects is already a plain object, no need to convert
     const formattedStudents = students.map(student => {
       const studentObj = student.toObject();
-      
+
       // If subjects is a Map, convert it
       if (studentObj.subjects instanceof Map) {
         studentObj.subjects = Object.fromEntries(studentObj.subjects);
       }
       // Otherwise, it's already an object - leave it as is
-      
+
       return studentObj;
     });
-    console.log("erorr" )
+    console.log("erorr")
 
     return res.status(200).json({
       success: true,
@@ -206,31 +172,51 @@ const getStudentByRollNo = async (req, res) => {
   }
 };
 
+
 const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
     console.log("Updating student:", id);
-    console.log("Update data:", updateData);
 
-    const student = await Student.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    ).lean(); // ⭐ Returns plain JavaScript object
+    // ⭐ Fetch old student data BEFORE update
+    const oldStudent = await Student.findById(id).lean();
 
-    if (!student) {
+    if (!oldStudent) {
       return res.status(404).json({
         success: false,
         message: 'Student not found'
       });
     }
 
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    // Perform update
+    const student = await Student.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).lean();
+
+    console.log(id)
+    // ⭐ Log the activity
+    await ActivityLogService.logMarksUpdate({
+      teacherId: req.user.id,
+      student
+    });
+
+
     res.status(200).json({
       success: true,
       message: 'Student updated successfully',
-      data: student // Already a plain object, no conversion needed
+      data: student
     });
 
   } catch (error) {

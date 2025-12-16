@@ -61,10 +61,18 @@ const ClassRecordsPage = () => {
         overallGrade: updatedStudent.overallGrade,
       };
 
+      const token = localStorage.getItem("authToken");
+
       await axios.put(
         `http://localhost:5000/api/students/${updatedStudent._id}`,
-        payload
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
+
 
       toast.success("Student updated successfully");
       closeModal();

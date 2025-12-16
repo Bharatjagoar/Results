@@ -9,12 +9,13 @@ const {
   deleteStudent,
   getAllClasses
 } = require('../controllers/studentController');
+const authenticate = require('../middleware/auth.js');
 
-router.post('/bulk', bulkUploadStudents);
+router.post('/bulk',authenticate, bulkUploadStudents);
 router.get('/classes/list', getAllClasses);
 router.get('/class/:classId', getStudentsByClass);
 router.get('/roll/:rollNo', getStudentByRollNo);
-router.put('/:id', updateStudent);
+router.put('/:id',authenticate, updateStudent);
 router.delete('/:id', deleteStudent);
 
 module.exports = router;

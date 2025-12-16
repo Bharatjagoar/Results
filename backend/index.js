@@ -5,12 +5,14 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
+
 // Load environment variables
 dotenv.config();
 
 // Import routes
 const studentRoutes = require('./routes/studentRoutes');
 const authRoutes = require('./routes/authRoutes');
+const activityRoutes = require("./routes/activity");
 
 // Initialize Express app
 const app = express();
@@ -42,6 +44,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/students', studentRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/activity", activityRoutes);
 
 
 // Error Handling Middleware

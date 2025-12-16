@@ -13,6 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import PublicRoute from "./components/PublicRoute.jsx";
 import ClassRecordsPage from "./pages/ClassRecord.jsx";
+import ActivityLogPage from "./pages/ActivityLogPage.jsx";
 
 function App() {
   return (
@@ -53,6 +54,13 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+
+          <Route path="/activity" element={
+            <ProtectedRoute>
+              <ActivityLogPage />
+            </ProtectedRoute>
+          } />
 
 
           {/* Public Routes - redirect to home if authenticated */}
