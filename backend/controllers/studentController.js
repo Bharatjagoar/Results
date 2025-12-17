@@ -4,98 +4,181 @@ const ActivityLogService = require("../services/activityLogService.js");
 const bulkUploadStudents = async (req, res) => {
   try {
     const { classId, students } = req.body;
-
-    if (!students || !Array.isArray(students) || students.length === 0) {
+    console.log(students[0]);
+    
+    if (!Array.isArray(students) || students.length === 0) {
       return res.status(400).json({
         success: false,
         message: "No student data provided"
       });
     }
 
-    // -------------------------------
-    // FORMAT STUDENTS
-    // -------------------------------
-    const formattedStudents = students.map((student) => {
-      const formattedSubjects = {};
-
-      if (student.subjects && typeof student.subjects === "object") {
-        Object.entries(student.subjects).forEach(
-          ([subjectName, subjectData]) => {
-            formattedSubjects[subjectName] = {
-              internals: Number(subjectData.internals),
-              midTerm: Number(subjectData.midTerm),
-              finalTerm: Number(subjectData.finalTerm),
-              total: Number(subjectData.total),
-              grade:
-                subjectData.grade === "null" ||
-                  subjectData.grade === "" ||
-                  subjectData.grade === null
-                  ? null
-                  : subjectData.grade
-            };
-          }
-        );
-      }
-
-      return {
-        name: student.name,
-        fatherName: student.fatherName,
-        motherName: student.motherName,
-        examRollNo: Number(student.examRollNo),
-        class: student.class,
-        dob: student.dob ? String(student.dob) : "",
-        admissionNo: Number(student.admissionNo),
-        house: student.house,
-        subjects: formattedSubjects,
-        overallGrade:
-          student.overallGrade === "null" || student.overallGrade === ""
-            ? null
-            : student.overallGrade,
-        result:
-          student.result === "null" || student.result === ""
-            ? null
-            : student.result,
-        grandTotal: Number(student.grandTotal)
-      };
-    });
-
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized: user not found"
+        message: "Unauthorized"
       });
     }
 
+    let inserted = 0;
+    let updated = 0;
 
-    // -------------------------------
-    // INSERT
-    // -------------------------------
-    const result = await Student.insertMany(formattedStudents, {
-      ordered: false
-    });
+    for (const incoming of students) {
+      // -----------------------------
+      // 1️⃣ Find student
+      // -----------------------------
+      const existingStudent = await Student.findOne({
+        examRollNo: Number(incoming.examRollNo),
+        class: incoming.class
+      });
+      
+      // -----------------------------
+      // 2️⃣ CREATE NEW STUDENT
+      // -----------------------------
+      if (!existingStudent) {
+        const newStudent = new Student({
+          name: incoming.name,
+          fatherName: incoming.fatherName,
+          motherName: incoming.motherName,
+          examRollNo: Number(incoming.examRollNo),
+          class: incoming.class,
+          dob: incoming.dob || "",
+          admissionNo: Number(incoming.admissionNo),
+          house: incoming.house,
+          subjects: incoming.subjects || {},
+          overallGrade: incoming.overallGrade || null,
+          result: incoming.result || null,
+          grandTotal: Number(incoming.grandTotal) || 0
+        });
 
-    // -------------------------------
-    // ACTIVITY LOG (ONLY ONCE)
-    // -------------------------------
-    console.log(formattedStudents[0]?.class);
+        await newStudent.save();
+        inserted++;
+        continue;
+      }
+
+      // -----------------------------
+      // 3️⃣ UPDATE EXISTING STUDENT (SMART MERGE)
+      // -----------------------------
+
+      // 🔹 Update basic info ONLY if incoming value is meaningful
+      const safeUpdateFields = [
+        "name",
+        "fatherName",
+        "motherName",
+        "dob",
+        "house"
+      ];
+
+      safeUpdateFields.forEach(field => {
+        // Only update if incoming has a real value (not empty/null/undefined)
+        if (incoming[field] && incoming[field].toString().trim() !== "") {
+          existingStudent[field] = incoming[field];
+        }
+      });
+
+      // 🔹 SUBJECT-LEVEL SMART MERGE
+      if (incoming.subjects && typeof incoming.subjects === "object") {
+        if (!existingStudent.subjects) {
+          existingStudent.subjects = {};
+        }
+
+        for (const [subjectName, incomingSubjectData] of Object.entries(incoming.subjects)) {
+          const existingSubjectData = existingStudent.subjects[subjectName];
+
+          // ✅ Subject doesn't exist → ADD IT
+          if (!existingSubjectData) {
+            existingStudent.subjects[subjectName] = incomingSubjectData;
+            continue;
+          }
+
+          // ✅ Subject exists → MERGE FIELD BY FIELD
+          // Only update fields that have meaningful values in incoming data
+          const subjectFields = [
+            'theory',
+            'practical', 
+            'activity',
+            'total',
+            'grade',
+            'remarks'
+          ];
+
+          subjectFields.forEach(field => {
+            // Check if incoming subject has this field with a real value
+            if (
+              incomingSubjectData[field] !== undefined &&
+              incomingSubjectData[field] !== null &&
+              incomingSubjectData[field] !== ""
+            ) {
+              // For numeric fields, also check if it's a valid number
+              if (['theory', 'practical', 'activity', 'total'].includes(field)) {
+                const numValue = Number(incomingSubjectData[field]);
+                if (!isNaN(numValue)) {
+                  existingStudent.subjects[subjectName][field] = numValue;
+                }
+              } else {
+                // For grade and remarks, directly update
+                existingStudent.subjects[subjectName][field] = incomingSubjectData[field];
+              }
+            }
+          });
+        }
+      }
+
+      // 🔹 Update admissionNo only if provided and valid
+      if (incoming.admissionNo !== undefined && !isNaN(incoming.admissionNo)) {
+        const admNo = Number(incoming.admissionNo);
+        if (admNo > 0) {
+          existingStudent.admissionNo = admNo;
+        }
+      }
+
+      // 🔹 Update overallGrade only if provided and not empty
+      if (incoming.overallGrade && incoming.overallGrade.toString().trim() !== "") {
+        existingStudent.overallGrade = incoming.overallGrade;
+      }
+
+      // 🔹 Update result only if provided and not empty
+      if (incoming.result && incoming.result.toString().trim() !== "") {
+        existingStudent.result = incoming.result;
+      }
+
+      // 🔹 Update grandTotal only if provided and is valid number
+      if (incoming.grandTotal !== undefined && !isNaN(incoming.grandTotal)) {
+        const total = Number(incoming.grandTotal);
+        if (total >= 0) {
+          existingStudent.grandTotal = total;
+        }
+      }
+
+      // Mark subjects as modified for Mongoose
+      existingStudent.markModified('subjects');
+      
+      await existingStudent.save();
+      updated++;
+    }
+
+    // -----------------------------
+    // 4️⃣ ACTIVITY LOG
+    // -----------------------------
     await ActivityLogService.logBulkUpload({
       teacherId: req.user.id,
       classId,
-      count: result.length
+      inserted,
+      updated
     });
 
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
-      message: `Successfully uploaded ${result.length} students`,
-      inserted: result.length
+      message: "Bulk upload processed successfully",
+      inserted,
+      updated
     });
 
   } catch (error) {
     console.error("Bulk upload error:", error);
-
     return res.status(500).json({
       success: false,
-      message: "Error uploading students",
+      message: "Bulk upload failed",
       error: error.message
     });
   }
