@@ -207,11 +207,10 @@ const ExcelUploadPage = () => {
       setAllSubHeaders(subHeaders);
       setFullRawData(rawRows);
 
-      // ⭐ NEW FILTERING LOGIC
       const filteredHeaders = [];
       const indices = [];
 
-      // First 8 columns are always basic info
+      // First 8 columns: basic info
       const basicInfoHeaders = [
         "Student's Name",
         "Father's Name",
@@ -223,47 +222,38 @@ const ExcelUploadPage = () => {
         "House"
       ];
 
-      basicInfoHeaders.forEach((header, idx) => {
-        filteredHeaders.push(header);
-        indices.push(idx);
+      basicInfoHeaders.forEach((h, i) => {
+        filteredHeaders.push(h);
+        indices.push(i);
       });
 
-      // ⭐ Detect subjects and their total columns
-      let currentSubject = "";
+      // -------- SUBJECT LOGIC --------
+      let lastSubject = null;
 
-      for (let index = 8; index < mainHeaders.length; index++) {
-        const mainHeaderStr = mainHeaders[index] ? mainHeaders[index].toString().trim() : "";
-        const subHeaderStr = subHeaders[index] ? subHeaders[index].toString().trim().toLowerCase() : "";
+      for (let i = 8; i < mainHeaders.length; i++) {
+        const main = mainHeaders[i]?.toString().trim();
+        const sub = allSubHeaders[i]?.toString().toLowerCase().trim();
 
-        console.log(`Index ${index}: main="${mainHeaderStr}" | sub="${subHeaderStr}"`);
-
-        // Skip GRADE and Attendance in main headers
-        if (mainHeaderStr.toLowerCase() === "grade" || mainHeaderStr.toLowerCase() === "attendance") {
-          filteredHeaders.push(mainHeaderStr);
-          indices.push(index);
-          continue;
+        // Detect new subject ONLY when main header changes
+        if (main && main !== lastSubject) {
+          lastSubject = main;
         }
 
-        // Update current subject when we see a new main header
-        if (mainHeaderStr && !mainHeaderStr.toLowerCase().includes("class")) {
-          currentSubject = mainHeaderStr;
+        // Show only TOTAL columns in preview
+        if (sub?.includes("total")) {
+          filteredHeaders.push(`${lastSubject} Total`);
+          indices.push(i);
         }
 
-        // Check if this is a Total column
-        const cleanSubHeader = subHeaderStr.replace(/\r?\n|\r/g, " ").trim();
-
-        if (cleanSubHeader.includes("total") && cleanSubHeader.includes("(100)")) {
-          filteredHeaders.push(`${currentSubject} Total`);
-          indices.push(index);
-          console.log(`✅ Added Total column for ${currentSubject} at index ${index}`);
-        }
-        // Also include non-subject columns (like Arts, Sports, etc.)
-        else if (cleanSubHeader && !cleanSubHeader.includes("(20)") &&
-          !cleanSubHeader.includes("(30)") &&
-          !cleanSubHeader.includes("(50)") &&
-          !cleanSubHeader.includes("(100)")) {
-          filteredHeaders.push(cleanSubHeader);
-          indices.push(index);
+        // Non-subject columns (Grade / Attendance / Arts / Sports)
+        if (
+          main?.toLowerCase() === "grade" ||
+          main?.toLowerCase() === "attendance" ||
+          sub?.includes("arts") ||
+          sub?.includes("sports")
+        ) {
+          filteredHeaders.push(main || sub);
+          indices.push(i);
         }
       }
 
@@ -618,7 +608,7 @@ const ExcelUploadPage = () => {
                             value={row[col]}
                             onChange={(e) => handleEdit(rowIndex, col, e.target.value)}
                             disabled={!editMode}
-                            className={editMode ? "editable" : "locked"}
+                            className={"locked"}
                           />
                         </td>
                       ))}
