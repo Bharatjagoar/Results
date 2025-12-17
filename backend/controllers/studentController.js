@@ -92,9 +92,9 @@ const bulkUploadStudents = async (req, res) => {
   try {
     const { classId, students } = req.body;
     console.log(extractClassAndSection(students[0].class));
-    let {className,section} = extractClassAndSection(students[0].class);
-    const resultofclass = await ensureClassAndSection(className,section);
-    console.log("result of class ======",resultofclass);
+    let { className, section } = extractClassAndSection(students[0].class);
+    const resultofclass = await ensureClassAndSection(className, section);
+    console.log("result of class ======", resultofclass);
     if (!Array.isArray(students) || students.length === 0) {
       return res.status(400).json({
         success: false,
@@ -120,7 +120,7 @@ const bulkUploadStudents = async (req, res) => {
         examRollNo: Number(incoming.examRollNo),
         class: incoming.class
       });
-      
+
       // -----------------------------
       // 2️⃣ CREATE NEW STUDENT
       // -----------------------------
@@ -184,7 +184,7 @@ const bulkUploadStudents = async (req, res) => {
           // Only update fields that have meaningful values in incoming data
           const subjectFields = [
             'theory',
-            'practical', 
+            'practical',
             'activity',
             'total',
             'grade',
@@ -241,7 +241,7 @@ const bulkUploadStudents = async (req, res) => {
 
       // Mark subjects as modified for Mongoose
       existingStudent.markModified('subjects');
-      
+
       await existingStudent.save();
       updated++;
     }
@@ -455,3 +455,27 @@ module.exports = {
   deleteStudent,
   getAllClasses
 };
+
+
+module.exports.getsection = async (req, res) => {
+  console.log("hellow bharat");
+  const { classId } = req.params;
+  console.log(req.params);
+  try {
+    const resp = await classcollection.findOne({ class: classId });
+    console.log(resp);
+    return res.status(200).json({
+      success: true,
+      message: "Ran correctly",
+      data: resp.section
+    })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: error.message,
+      success: false
+    })
+  }
+
+
+}

@@ -14,6 +14,10 @@ const TeacherSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  isAdmin:{
+    type:Boolean,
+    required:true
+  },
   password: {
     type: String,
     required: true

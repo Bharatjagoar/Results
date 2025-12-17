@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./SignUpTeacher.css";
 import { useNavigate } from "react-router-dom";
 
@@ -9,20 +9,43 @@ const Signup = () => {
     password: "",
     Confirmpassword: "",
   });
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminExists, setAdminExists] = useState(true);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const navigate = useNavigate();
+
+  // 🔑 CHECK IF ADMIN EXISTS (ON PAGE LOAD)
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/auth/admin-exists");
+        const data = await res.json();
+        console.log(data)
+        setAdminExists(data.adminExists);
+      } catch (err) {
+        console.error("Failed to check admin status");
+      }
+    };
+
+    checkAdmin();
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-  const clickme = ()=>{
+
+  const clickme = () => {
     navigate("/login");
-  }
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setLoading(true); // 🔥 Start loader
+    setLoading(true);
+    setError("");
 
     if (form.password !== form.Confirmpassword) {
       setError("Passwords do not match!");
@@ -44,6 +67,7 @@ const Signup = () => {
           username: form.username,
           email: form.email,
           password: form.password,
+          isAdmin: !adminExists && isAdmin   // 🔥 IMPORTANT
         }),
       });
 
@@ -60,13 +84,27 @@ const Signup = () => {
       setError("Server error, please try again later.");
     }
 
-    setLoading(false); // 🔥 Stop loader
+    setLoading(false);
   };
 
   return (
     <div className="auth-container">
       <div className="auth-box">
         <h2>Create Account</h2>
+
+        {/* 🔑 ADMIN OPTION (ONLY IF NO ADMIN EXISTS) */}
+        {!adminExists && (
+          <div className="admin-option">
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={isAdmin}
+                onChange={(e) => setIsAdmin(e.target.checked)}
+              />
+              <span>Sign up as Admin <small>(first time setup)</small></span>
+            </label>
+          </div>
+        )}
 
         <form onSubmit={handleSignup}>
           <div className="input-group">
@@ -125,7 +163,8 @@ const Signup = () => {
         </form>
 
         <p className="auth-footer">
-          Already have an account? <span onClick={()=>{clickme()}}>Login</span>
+          Already have an account?{" "}
+          <span onClick={clickme}>Login</span>
         </p>
       </div>
     </div>

@@ -140,3 +140,41 @@
     font-size: 22px;
   }
 }
+
+/* ============================= */
+/* Admin Signup Checkbox Styling */
+/* ============================= */
+
+.admin-option {
+  margin-bottom: 20px;
+  padding: 10px 12px;
+  background: #f7f8ff;
+  border: 1px dashed #667eea;
+  border-radius: 6px;
+}
+
+.admin-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.admin-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #667eea;
+  cursor: pointer;
+}
+
+.admin-checkbox span {
+  line-height: 1.4;
+}
+
+.admin-checkbox small {
+  color: #777;
+  font-size: 12px;
+  margin-left: 4px;
+}

@@ -5,13 +5,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-producti
 const JWT_EXPIRES_IN = "7d"; // Token expires in 7 days
 
 // Generate JWT token
-const generateToken = (userId, email) => {
+function generateToken(id, email, isAdmin) {
   return jwt.sign(
-    { id: userId, email },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    { id, email, isAdmin },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
   );
-};
+}
+
 
 // Verify JWT token
 const verifyToken = (token) => {

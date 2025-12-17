@@ -4,7 +4,51 @@ import axios from "axios";
 import Navbar from "../components/Navbar"
 import StudentEditModal from "../components/StudentEditModal.jsx";
 import { toast } from "react-toastify";
+import Loader from "../components/Loader";
+
 import "./ClassRecordsPage.css";
+
+
+function extractClassAndSection(input) {
+  if (!input || typeof input !== "string") {
+    return { className: null, section: null };
+  }
+
+  const normalized = input
+    .replace(/\s+/g, " ")
+    .trim();
+
+  /**
+   * Supported patterns:
+   * "9 Science"
+   * "Class 9 Science"
+   * "Class 9 - Science"
+   * "Class 9 Section Science"
+   * "9-Science"
+   * "11 PCM"
+   */
+
+  const match = normalized.match(
+    /(?:class\s*)?(\d{1,2})\s*(?:-|section\s*)?\s*(.+)/i
+  );
+
+  if (!match) {
+    return { className: null, section: null };
+  }
+
+  const className = match[1];
+  const section = match[2]?.trim();
+
+  if (!section) {
+    return { className, section: null };
+  }
+
+  return {
+    className,
+    section
+  };
+}
+
 
 const ClassRecordsPage = () => {
   const { classId } = useParams();
@@ -17,6 +61,7 @@ const ClassRecordsPage = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [existingsections, setexistingSection] = useState([]);
 
   // =========================
   // FETCH STUDENTS
@@ -38,6 +83,22 @@ const ClassRecordsPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    console.log("hellow bharat");
+    async function getsections() {
+      console.log(classId);
+      const { className, section } = extractClassAndSection(classId);
+      try {
+        const getsection = await axios.get("http://localhost:5000/api/students/section/" + classId);
+        console.log(getsection.data.data);
+        setexistingSection(getsection?.data?.data);
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    getsections();
+  }, [])
 
   // =========================
   // EDIT HANDLERS
@@ -107,10 +168,11 @@ const ClassRecordsPage = () => {
               onChange={(e) => setSection(e.target.value)}
             >
               <option value="">-- Select Section --</option>
-              <option value="A">Section A</option>
-              <option value="B">Section B</option>
-              <option value="C">Section C</option>
-              <option value="D">Section D</option>
+              {
+                existingsections?.map((item, index) => {
+                  return <option key={index} value={item}>{item}</option>
+                })
+              }
             </select>
 
             <button
@@ -137,10 +199,11 @@ const ClassRecordsPage = () => {
     return (
       <>
         <Navbar />
-        <div className="records-container">Loading...</div>
+        <Loader text="Fetching student records..." />
       </>
     );
   }
+
 
   // =========================
   // EMPTY DATA STATE

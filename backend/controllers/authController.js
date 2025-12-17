@@ -9,7 +9,7 @@ const { generateToken } = require("../utils/jwt");
 
 module.exports.signup = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, isAdmin } = req.body;
     console.log(req.body)
 
     // 1️⃣ Check if email already exists in Teacher collection
@@ -26,6 +26,15 @@ module.exports.signup = async (req, res) => {
       });
     }
 
+    // 🔐 BACKEND CHECK
+    const adminExists = await Teacher.exists({ isAdmin: true });
+
+    let finalIsAdmin = false;
+
+    if (!adminExists && isAdmin === true) {
+      finalIsAdmin = true; // first admin allowed
+    }
+
     // 3️⃣ Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
 
@@ -35,6 +44,7 @@ module.exports.signup = async (req, res) => {
       email,
       password, // we will hash later
       otp,
+      isAdmin: finalIsAdmin,
       expiresAt: new Date(Date.now() + 3 * 60 * 1000), // expires in 3 mins
     });
     console.log("helow")
@@ -47,12 +57,21 @@ module.exports.signup = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("Signup Error:", error.message);
+    console.log("Signup Error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
     });
   }
+};
+
+
+module.exports.checkAdminExists = async (req, res) => {
+  const adminExists = await Teacher.exists({ isAdmin: true });
+
+  return res.json({
+    adminExists: !!adminExists
+  });
 };
 
 
@@ -76,6 +95,7 @@ module.exports.verifyOtp = async (req, res) => {
     const teacher = new Teacher({
       username: record.username,
       email: record.email,
+      isAdmin: record.isAdmin,
       password: record.password, // Already hashed
     });
 
@@ -87,6 +107,7 @@ module.exports.verifyOtp = async (req, res) => {
     await Teacher.create({
       username: record.username,
       email: record.email,
+      isAdmin: record.isAdmin,
       password: record.password
     });
 
@@ -96,7 +117,7 @@ module.exports.verifyOtp = async (req, res) => {
     await TempTeacher.deleteOne({ email });
 
     // ⭐ Generate JWT token
-    const token = generateToken(createdTeacher._id, createdTeacher.email);
+    const token = generateToken(createdTeacher._id, createdTeacher.email, createdTeacher.isAdmin);
 
     return res.json({
       success: true,
@@ -280,3 +301,28 @@ module.exports.login = async (req, res) => {
     });
   }
 };
+
+module.exports.checkForAdmin = async (req, res) => {
+  console.log(req.body);
+  try {
+    const checkteacher = await Teacher.findOne({ isAdmin: true })
+    console.log(checkteacher);
+    if (!checkteacher) {
+      return res.status(200).json({
+        adminExists: false,
+        message: "Admin does not exist"
+      })
+    }
+    
+    return res.status(200).json({
+      adminExists: true,
+      message: "Admin exist"
+    })
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({
+      success: false,
+      message: error.message
+    })
+  }
+}
