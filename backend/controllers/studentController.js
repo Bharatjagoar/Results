@@ -1,11 +1,100 @@
 const Student = require("../models/Student.js");
 const ActivityLogService = require("../services/activityLogService.js");
+const classcollection = require("../models/classSchema.js");
+
+function extractClassAndSection(input) {
+  if (!input || typeof input !== "string") {
+    return { className: null, section: null };
+  }
+
+  const normalized = input
+    .replace(/\s+/g, " ")
+    .trim();
+
+  /**
+   * Supported patterns:
+   * "9 Science"
+   * "Class 9 Science"
+   * "Class 9 - Science"
+   * "Class 9 Section Science"
+   * "9-Science"
+   * "11 PCM"
+   */
+
+  const match = normalized.match(
+    /(?:class\s*)?(\d{1,2})\s*(?:-|section\s*)?\s*(.+)/i
+  );
+
+  if (!match) {
+    return { className: null, section: null };
+  }
+
+  const className = match[1];
+  const section = match[2]?.trim();
+
+  if (!section) {
+    return { className, section: null };
+  }
+
+  return {
+    className,
+    section
+  };
+}
+
+
+
+async function ensureClassAndSection(className, sectionName) {
+  if (!className || !sectionName) {
+    throw new Error("Class name and section name are required");
+  }
+
+  // 1️⃣ Find class
+  let classDoc = await classcollection.findOne({ class: className });
+
+  // 2️⃣ If class does NOT exist → create it
+  if (!classDoc) {
+    classDoc = new classcollection({
+      class: className,
+      section: [sectionName]
+    });
+
+    await classDoc.save();
+    return {
+      createdClass: true,
+      addedSection: true
+    };
+  }
+
+  // 3️⃣ Class exists → check section
+  const sectionExists = classDoc.section.includes(sectionName);
+
+  // 4️⃣ If section does NOT exist → add it
+  if (!sectionExists) {
+    classDoc.section.push(sectionName);
+    await classDoc.save();
+
+    return {
+      createdClass: false,
+      addedSection: true
+    };
+  }
+
+  // 5️⃣ Class and section already exist → do nothing
+  return {
+    createdClass: false,
+    addedSection: false
+  };
+}
+
 
 const bulkUploadStudents = async (req, res) => {
   try {
     const { classId, students } = req.body;
-    console.log(students[0]);
-    
+    console.log(extractClassAndSection(students[0].class));
+    let {className,section} = extractClassAndSection(students[0].class);
+    const resultofclass = await ensureClassAndSection(className,section);
+    console.log("result of class ======",resultofclass);
     if (!Array.isArray(students) || students.length === 0) {
       return res.status(400).json({
         success: false,
