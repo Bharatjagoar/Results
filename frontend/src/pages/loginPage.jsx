@@ -9,6 +9,7 @@ const Login = () => {
     email: "",
     password: ""
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -35,7 +36,7 @@ const Login = () => {
       if (res.data.success) {
         // Save token to localStorage
         localStorage.setItem("authToken", res.data.token);
-        
+
         // Optionally save user data
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
@@ -53,47 +54,58 @@ const Login = () => {
 
   return (
     <>
-    
-    <div className="login-container">
-      
-      <div className="login-box">
-        <h2>Teacher Login</h2>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              required
-            />
-          </div>
 
-          <div className="input-group">
-            <label>Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+      <div className="login-container">
 
-          <button type="submit" disabled={loading} className="login-btn">
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+        <div className="login-box">
+          <h2>Teacher Login</h2>
 
-        <p className="signup-link">
-          Don't have an account? <Link to="/signup">Sign up here</Link>
-        </p>
+          <form onSubmit={handleSubmit}>
+            <div className="input-group">
+              <label>Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+
+            <div className="input-group password-group">
+              <label>Password</label>
+
+              <div className="password-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+
+                <span
+                  className="toggle-password"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </span>
+              </div>
+            </div>
+
+
+            <button type="submit" disabled={loading} className="login-btn">
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+
+          <p className="signup-link">
+            Don't have an account? <Link to="/signup">Sign up here</Link>
+          </p>
+        </div>
       </div>
-    </div>
     </>
   );
 };

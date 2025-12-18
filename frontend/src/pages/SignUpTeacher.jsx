@@ -15,6 +15,9 @@ const Signup = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showCNFPassword, setShowCNFPassword] = useState(false);
+
 
   const navigate = useNavigate();
 
@@ -131,29 +134,51 @@ const Signup = () => {
             />
           </div>
 
-          <div className="input-group">
+          <div className="input-group password-group">
             <label>Password</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Create a password"
-              value={form.password}
-              onChange={handleChange}
-              required
-            />
+
+            <div className="password-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Create a password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+
+              <span
+                className="toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </span>
+            </div>
           </div>
 
-          <div className="input-group">
+
+          <div className="input-group password-group">
             <label>Confirm Password</label>
-            <input
-              type="password"
-              name="Confirmpassword"
-              placeholder="Re-enter your password"
-              value={form.Confirmpassword}
-              onChange={handleChange}
-              required
-            />
+
+            <div className="password-wrapper">
+              <input
+                type={showCNFPassword ? "text" : "password"}
+                name="Confirmpassword"
+                placeholder="Re-enter your password"
+                value={form.Confirmpassword}
+                onChange={handleChange}
+                required
+              />
+
+              <span
+                className="toggle-password"
+                onClick={() => setShowCNFPassword(!showCNFPassword)}
+              >
+                {showCNFPassword ? "🙈" : "👁️"}
+              </span>
+            </div>
           </div>
+
 
           {error && <p className="error-text">{error}</p>}
 
