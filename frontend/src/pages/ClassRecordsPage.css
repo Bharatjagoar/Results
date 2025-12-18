@@ -167,3 +167,22 @@
     padding: 10px;
   }
 }
+
+.action-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.download-btn {
+  background: #2e7d32;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.download-btn:hover {
+  background: #1b5e20;
+}

@@ -5,7 +5,13 @@ import Navbar from "../components/Navbar"
 import StudentEditModal from "../components/StudentEditModal.jsx";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
-import { calculateGrandTotalAndMax,calculateGrade,calculateResultFromSubjects } from "./utils.js";
+import { generateReportCard } from "../utils/generateReportCard.jsx";
+import ReportCard from "../components/ReportCard";
+import html2pdf from "html2pdf.js";
+import { useRef } from "react";
+
+
+import { calculateGrandTotalAndMax, calculateGrade, calculateResultFromSubjects } from "./utils.js";
 
 import "./ClassRecordsPage.css";
 
@@ -51,8 +57,12 @@ function extractClassAndSection(input) {
 }
 
 
+
+
+
 const ClassRecordsPage = () => {
   const { classId } = useParams();
+  const reportRef = useRef();
 
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -237,6 +247,34 @@ const ClassRecordsPage = () => {
       </>
     );
   }
+  const downloadReport = (student) => {
+    console.log(student, reportRef);
+    if (!student || !reportRef.current) return;
+
+    html2pdf()
+      .set({
+        margin: 0,
+        filename: `${student.name}_Report_Card.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollY: 0
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait"
+        },
+        pagebreak: {
+          mode: ["avoid-all", "css", "legacy"]
+        }
+      })
+
+      .from(reportRef.current)
+      .save();
+  };
+
 
   // =========================
   // MAIN TABLE UI
@@ -261,48 +299,61 @@ const ClassRecordsPage = () => {
                 <th>Action</th>
               </tr>
             </thead>
-              <tbody>
-                {students.map((student) => {
-                  const { grandTotal, maxTotal } =
-                    calculateGrandTotalAndMax(student.subjects);
+            <tbody>
+              {students.map((student) => {
+                const { grandTotal, maxTotal } =
+                  calculateGrandTotalAndMax(student.subjects);
 
-                  const result =
-                    grandTotal === 0
-                      ? "N/A"
-                      : calculateResultFromSubjects(student.subjects);
+                const result =
+                  grandTotal === 0
+                    ? "N/A"
+                    : calculateResultFromSubjects(student.subjects);
 
-                  return (
-                    <tr key={student._id}>
-                      <td>{student.examRollNo}</td>
-                      <td>{student.name}</td>
-                      <td>{student.fatherName}</td>
+                return (
+                  <tr key={student._id}>
+                    <td>{student.examRollNo}</td>
+                    <td>{student.name}</td>
+                    <td>{student.fatherName}</td>
 
-                      {/* GRAND TOTAL */}
-                      <td className="grand-total-cell">
-                        <strong>
-                          {grandTotal > 0 ? `${grandTotal} / ${maxTotal}` : "N/A"}
-                        </strong>
-                      </td>
+                    {/* GRAND TOTAL */}
+                    <td className="grand-total-cell">
+                      <strong>
+                        {grandTotal > 0 ? `${grandTotal} / ${maxTotal}` : "N/A"}
+                      </strong>
+                    </td>
 
-                      {/* RESULT */}
-                      <td>
-                        <span className={`result-badge ${result.toLowerCase()}`}>
-                          {result}
-                        </span>
-                      </td>
+                    {/* RESULT */}
+                    <td>
+                      <span className={`result-badge ${result.toLowerCase()}`}>
+                        {result}
+                      </span>
+                    </td>
 
-                      <td>
-                        <button
-                          className="view-edit-btn"
-                          onClick={() => openEditModal(student)}
-                        >
-                          View/Edit
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+                    <td className="action-cell">
+                      <button
+                        className="view-edit-btn"
+                        onClick={() => openEditModal(student)}
+                      >
+                        View/Edit
+                      </button>
+
+                      <button
+                        className="download-btn"
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          requestAnimationFrame(() => downloadReport(student));
+                        }}
+
+                      >
+                        Download Report
+                      </button>
+                    </td>
+
+
+                  </tr>
+                );
+              })}
+            </tbody>
 
           </table>
         </div>
@@ -315,6 +366,17 @@ const ClassRecordsPage = () => {
         student={selectedStudent}
         onSave={handleSave}
       />
+      {selectedStudent && (
+        <div style={{ position: "absolute", left: "-9999px" }}>
+          <ReportCard
+            ref={reportRef}
+            student={selectedStudent}
+            classId={classId}
+            section={section}
+          />
+        </div>
+      )}
+
     </>
   );
 };

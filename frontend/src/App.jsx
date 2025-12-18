@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import PublicRoute from "./components/PublicRoute.jsx";
 import ClassRecordsPage from "./pages/ClassRecord.jsx";
 import ActivityLogPage from "./pages/ActivityLogPage.jsx";
+import ReportCard from "./components/ReportCard.jsx";
 
 function App() {
   return (
@@ -78,6 +79,7 @@ function App() {
 
           {/* OTP verification - special case */}
           <Route path="/verify-otp" element={<VerifyOTP />} />
+          <Route path="/checkit" element={<ReportCard/>}/>
         </Routes>
       </BrowserRouter>
       <ToastContainer position="top-center" />
