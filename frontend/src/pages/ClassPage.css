@@ -8,6 +8,7 @@
   font-family: Arial, sans-serif;
 }
 
+/* Page title */
 .class-title {
   font-size: 32px;
   font-weight: 700;
@@ -16,29 +17,22 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Responsive card layout */
+/* =========================
+   CARD CONTAINER (KEY FIX)
+   ========================= */
 .class-cards {
-  display: grid;
-  grid-template-columns: 1fr; /* Mobile default: one column */
+  display: flex;
+  justify-content: center;     /* Center cards horizontally */
+  align-items: stretch;
   gap: 25px;
   width: 100%;
-  max-width: 800px;
+  max-width: 900px;
+  flex-wrap: wrap;             /* Wrap on small screens */
 }
 
-/* Bigger screens: two columns */
-@media (min-width: 600px) {
-  .class-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Very large screens: three columns */
-@media (min-width: 1000px) {
-  .class-cards {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
+/* =========================
+   INDIVIDUAL CARD
+   ========================= */
 .class-card {
   background: white;
   padding: 35px 20px;
@@ -49,7 +43,11 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-height: 120px;
+
+  min-width: 250px;            /* Important for horizontal layout */
+  max-width: 280px;
+  height: 120px;
+
   display: flex;
   justify-content: center;
   align-items: center;
@@ -61,4 +59,14 @@
   transform: translateY(-8px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
   background: #f0f4ff;
+}
+
+/* =========================
+   MOBILE OPTIMIZATION
+   ========================= */
+@media (max-width: 500px) {
+  .class-card {
+    width: 100%;
+    max-width: 100%;
+  }
 }

@@ -5,161 +5,54 @@ import StudentDetailsModal from "./StudentDetailsModal";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../components/Navbar";
+import { toast } from "react-toastify";
 // import { transformDataForBackend } from "./utils";
+import { useNavigate } from "react-router-dom";
 
 
-// improved excel date parser (handles serials, Date objects, and ISO-like strings)
-const excelDateToJS = (serialOrVal) => {
-  if (serialOrVal === null || serialOrVal === undefined || serialOrVal === "") return "";
-
-  // If it's already a Date object
-  if (serialOrVal instanceof Date && !isNaN(serialOrVal)) {
-    return serialOrVal.toISOString().split("T")[0];
-  }
-
-  // If it's a number (excel serial)
-  const maybeNum = typeof serialOrVal === "number" ? serialOrVal : parseFloat(serialOrVal);
-  if (!isNaN(maybeNum)) {
-    // Excel serial -> JS date. Using epoch 1899-12-30 (common approach).
-    // NOTE: XLSX sometimes returns floats; integer part is days.
-    const excelEpoch = new Date(1899, 11, 30);
-    const jsDate = new Date(excelEpoch.getTime() + Math.round(maybeNum) * 86400000);
-    if (!isNaN(jsDate)) return jsDate.toISOString().split("T")[0];
-  }
-
-  // If it's a string like "2025-03-10" or "10/03/2025", try Date parse
-  const parsed = new Date(serialOrVal);
-  if (!isNaN(parsed)) return parsed.toISOString().split("T")[0];
-
-  // Fallback: return original value as string
-  return String(serialOrVal);
+const formatDateDDMMYYYY = (dateObj) => {
+  const dd = String(dateObj.getDate()).padStart(2, "0");
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const yyyy = dateObj.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
 };
 
 
 
-const columns = [
-  "name",
-  "fatherName",
-  "motherName",
-  "examRollNo",
-  "class",
-  "dob",
-  "admissionNo",
-  "house",
-  "internalHindi",
-  "midHindi",
-  "endHindi",
-  "totalHindi",
-  "gradeHindi",
-  "internalEng",
-  "midEng",
-  "endEng",
-  "totalEng",
-  "gradeEng",
-  "internalMaths",
-  "midMaths",
-  "endMaths",
-  "totalMaths",
-  "gradeMaths",
-  "internalScience",
-  "midScience",
-  "endScience",
-  "totalScience",
-  "gradeScience",
-  "internalSst",
-  "midSst",
-  "endSst",
-  "totalSst",
-  "gradeSst",
-  "internalSanskrit",
-  "midSanskrit",
-  "endSanskrit",
-  "totalSanskrit",
-  "gradeSanskrit",
-  "overallGrade",
-  "result",
-  "grandTotal"
-];
+const excelDateToJS = (serialOrVal) => {
+  if (serialOrVal === null || serialOrVal === undefined || serialOrVal === "") {
+    return "";
+  }
 
-function detectSubjects(mainHeaders, subHeaders) {
-  const subjects = [];
-  let currentSubject = null;
+  // 1️⃣ Already a Date object
+  if (serialOrVal instanceof Date && !isNaN(serialOrVal)) {
+    return formatDateDDMMYYYY(serialOrVal);
+  }
 
-  for (let i = 0; i < mainHeaders.length; i++) {
-    const header = mainHeaders[i];
+  // 2️⃣ Excel serial number
+  const maybeNum =
+    typeof serialOrVal === "number" ? serialOrVal : parseFloat(serialOrVal);
 
-    if (header !== null && header !== undefined) {
-      // New subject begins
-      currentSubject = {
-        name: header.trim(),
-        start: i,
-        subHeaders: []
-      };
-      subjects.push(currentSubject);
-    }
-
-    // If we are inside a subject, push this column's sub-header
-    if (currentSubject) {
-      currentSubject.subHeaders.push({
-        index: i,
-        name: subHeaders[i] || null
-      });
+  if (!isNaN(maybeNum)) {
+    const excelEpoch = new Date(1899, 11, 30);
+    const jsDate = new Date(excelEpoch.getTime() + Math.round(maybeNum) * 86400000);
+    if (!isNaN(jsDate)) {
+      return formatDateDDMMYYYY(jsDate);
     }
   }
 
-  return subjects;
-}
+  // 3️⃣ Parse string dates
+  const parsed = new Date(serialOrVal);
+  if (!isNaN(parsed)) {
+    return formatDateDDMMYYYY(parsed);
+  }
 
-
-function parseRows(subjects, rawRows) {
-  return rawRows.map((row) => {
-    const student = {
-      name: row[0],
-      fatherName: row[1],
-      motherName: row[2],
-      examRollNo: row[3],
-      class: row[4],
-      admissionNo: row[5],
-      house: row[6],
-      subjects: {},
-      grade: null,
-      attendance: null
-    };
-
-    // Loop through each subject group
-    subjects.forEach((subj) => {
-      const subjectName = subj.name;
-
-      // Skip subjects with no marks (all blank)
-      const values = subj.subHeaders.map((col) => row[col.index]);
-
-      const isEmpty = values.every((v) => v === null || v === "" || v === undefined);
-      if (isEmpty) return;
-
-      // Add subject only if at least one value exists
-      student.subjects[subjectName] = {};
-
-      subj.subHeaders.forEach((col, idx) => {
-        const cleanName = col.name?.replace(/\r?\n|\r/g, "").trim();
-
-        if (cleanName) {
-          student.subjects[subjectName][cleanName] = row[col.index] || null;
-        }
-      });
-    });
-
-    // Last two columns:
-    student.grade = row[row.length - 2];
-    student.attendance = row[row.length - 1];
-
-    return student;
-  });
-}
-
+  // 4️⃣ Fallback
+  return String(serialOrVal);
+};
 
 const ExcelUploadPage = () => {
   const { classId } = useParams();
-
   const [excelData, setExcelData] = useState([]);
   const [tableHeaders, setTableHeaders] = useState([]);
   const [editMode, setEditMode] = useState(false);
@@ -170,6 +63,7 @@ const ExcelUploadPage = () => {
   const [allMainHeaders, setAllMainHeaders] = useState([]);
   const [allSubHeaders, setAllSubHeaders] = useState([]);
   const [filteredIndices, setFilteredIndices] = useState([]); // ⭐ Store filtered indices
+  const nav = useNavigate();
 
 
 
@@ -434,8 +328,10 @@ const ExcelUploadPage = () => {
       // Axios automatically parses JSON
       const result = response.data;
 
-      alert(`✅ Success! ${result.count} students uploaded successfully!`);
+      // alert(`✅ Success! ${result.count} students uploaded successfully!`);
+      toast.success(`✅ ${result.inserted || result.updated} students uploaded successfully!`);
       console.log("✅ UPLOAD SUCCESS:", result);
+      nav(-1);
     } catch (error) {
       if (error.response) {
         // Server responded with a status other than 2xx
@@ -595,23 +491,29 @@ const ExcelUploadPage = () => {
                     {tableHeaders.map((col, index) => (
                       <th key={index}>{col}</th>
                     ))}
-                    <th>Actions</th>
+                    <th>Marks Summary</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {excelData.map((row, rowIndex) => (
                     <tr key={rowIndex}>
-                      {tableHeaders.map((col, colIndex) => (
-                        <td key={colIndex}>
+                      {tableHeaders.map((col, colIndex) => {
+                        let date;
+                        if (col === "D.O.B") {
+                          date = excelDateToJS(row[col]);
+                        }else{
+                          date = row[col];
+                        }
+                        return (<td key={colIndex}>
                           <input
-                            value={row[col]}
+                            value={date}
                             onChange={(e) => handleEdit(rowIndex, col, e.target.value)}
                             disabled={!editMode}
                             className={"locked"}
                           />
-                        </td>
-                      ))}
+                        </td>)
+                      })}
 
                       <td>
                         <button

@@ -8,7 +8,7 @@ const ClassPage = () => {
   const { classId } = useParams();
 
   const options = [
-    { title: "Upload Marks Manually", path: `/class/${classId}/manual` },
+    // { title: "Upload Marks Manually", path: `/class/${classId}/manual` },
     { title: "Upload Marks via Excel", path: `/class/${classId}/excel` },
     { title: "Student Records", path: `/class/${classId}/records`}
   ];
