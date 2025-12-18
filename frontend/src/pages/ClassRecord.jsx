@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar"
 import StudentEditModal from "../components/StudentEditModal.jsx";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
+import { calculateGrandTotalAndMax,calculateGrade,calculateResultFromSubjects } from "./utils.js";
 
 import "./ClassRecordsPage.css";
 
@@ -260,32 +261,49 @@ const ClassRecordsPage = () => {
                 <th>Action</th>
               </tr>
             </thead>
+              <tbody>
+                {students.map((student) => {
+                  const { grandTotal, maxTotal } =
+                    calculateGrandTotalAndMax(student.subjects);
 
-            <tbody>
-              {students.map((student) => (
-                <tr key={student._id}>
-                  <td>{student.examRollNo}</td>
-                  <td>{student.name}</td>
-                  <td>{student.fatherName}</td>
-                  <td className="grand-total-cell">
-                    <strong>{student.grandTotal}</strong>
-                  </td>
-                  <td>
-                    <span className={`result-badge ${student.result?.toLowerCase()}`}>
-                      {student.result || "N/A"}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      className="view-edit-btn"
-                      onClick={() => openEditModal(student)}
-                    >
-                      View/Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+                  const result =
+                    grandTotal === 0
+                      ? "N/A"
+                      : calculateResultFromSubjects(student.subjects);
+
+                  return (
+                    <tr key={student._id}>
+                      <td>{student.examRollNo}</td>
+                      <td>{student.name}</td>
+                      <td>{student.fatherName}</td>
+
+                      {/* GRAND TOTAL */}
+                      <td className="grand-total-cell">
+                        <strong>
+                          {grandTotal > 0 ? `${grandTotal} / ${maxTotal}` : "N/A"}
+                        </strong>
+                      </td>
+
+                      {/* RESULT */}
+                      <td>
+                        <span className={`result-badge ${result.toLowerCase()}`}>
+                          {result}
+                        </span>
+                      </td>
+
+                      <td>
+                        <button
+                          className="view-edit-btn"
+                          onClick={() => openEditModal(student)}
+                        >
+                          View/Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+
           </table>
         </div>
       </div>

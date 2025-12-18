@@ -142,6 +142,63 @@ export const checkUserVerified = async () => {
   }
 };
 
+const calculateGrade = (total) => {
+  if (total >= 91 && total <= 100) return "A1";
+  if (total >= 81) return "A2";
+  if (total >= 71) return "B1";
+  if (total >= 61) return "B2";
+  if (total >= 51) return "C1";
+  if (total >= 41) return "C2";
+  if (total >= 33) return "D";
+  if (total >= 21) return "E1";
+  if (total >= 1) return "E2";
+  return "";
+};
+
+const calculateSubjectTotal = (marks) => {
+  if (!marks) return 0;
+
+  return (
+    (marks.internals || 0) +
+    (marks.midTerm || 0) +
+    (marks.finalTerm || 0)
+  );
+};
+
+const calculateGrandTotalAndMax = (subjects = {}) => {
+  let grandTotal = 0;
+  let subjectCount = 0;
+
+  Object.values(subjects).forEach((marks) => {
+    // consider subject only if any marks exist
+    const hasAnyMarks =
+      marks?.internals ||
+      marks?.midTerm ||
+      marks?.finalTerm;
+
+    if (hasAnyMarks) {
+      subjectCount++;
+      grandTotal += calculateSubjectTotal(marks);
+    }
+  });
+
+  return {
+    grandTotal,
+    maxTotal: subjectCount * 100
+  };
+};
+
+const calculateResultFromSubjects = (subjects = {}) => {
+  // FAIL if any subject total < 33
+  for (const marks of Object.values(subjects)) {
+    const total = calculateSubjectTotal(marks);
+    if (total > 0 && total < 33) {
+      return "FAIL";
+    }
+  }
+  return "PASS";
+};
 
 
-export {transformDataForBackend};
+
+export {transformDataForBackend,calculateGrade,calculateResultFromSubjects,calculateGrandTotalAndMax};

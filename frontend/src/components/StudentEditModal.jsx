@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./StudentEditModal.css";
 import { toast } from "react-toastify";
+import { calculateGrade } from "../pages/utils";
 
 const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
   const [editData, setEditData] = useState({});
@@ -18,7 +19,7 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
   // Validation function
   const validateMarks = (subject, field, value) => {
     const num = parseFloat(value);
-    
+
     if (isNaN(num)) {
       return "Must be a number";
     }
@@ -43,7 +44,7 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
 
   const handleSubjectChange = (subject, field, value) => {
     const error = validateMarks(subject, field, value);
-    
+
     setErrors(prev => ({
       ...prev,
       [`${subject}-${field}`]: error
@@ -92,6 +93,7 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
 
   return (
     <div className="student-modal-overlay">
+      {/* <h1>fds</h1> */}
       <div className="student-modal-box">
         <div className="modal-header">
           <h2>Edit Student: {student.name}</h2>
@@ -129,7 +131,7 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
                 {Object.entries(editData.subjects || {}).map(([subject, marks]) => (
                   <tr key={subject}>
                     <td className="subject-name">{subject}</td>
-                    
+
                     {/* Internals */}
                     <td>
                       <input
@@ -181,22 +183,8 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
                     </td>
 
                     {/* Grade */}
-                    <td>
-                      <input
-                        type="text"
-                        className="grade-input"
-                        value={marks.grade || ""}
-                        onChange={(e) => setEditData(prev => ({
-                          ...prev,
-                          subjects: {
-                            ...prev.subjects,
-                            [subject]: {
-                              ...prev.subjects[subject],
-                              grade: e.target.value
-                            }
-                          }
-                        }))}
-                      />
+                    <td className="grade-cell">
+                      <strong>{calculateGrade(calculateTotal(subject))}</strong>
                     </td>
                   </tr>
                 ))}
@@ -204,7 +192,7 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
             </table>
           </div>
 
-          {/* Overall Details */}
+          {/* Overall Details
           <div className="overall-section">
             <div className="overall-row">
               <label>Grand Total:</label>
@@ -235,7 +223,7 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
                 <option value="FAIL">FAIL</option>
               </select>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Modal Footer */}
@@ -243,8 +231,8 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
           <button className="cancel-modal-btn" onClick={onClose}>
             Cancel
           </button>
-          <button 
-            className="save-modal-btn" 
+          <button
+            className="save-modal-btn"
             onClick={handleSave}
             disabled={hasErrors()}
           >
