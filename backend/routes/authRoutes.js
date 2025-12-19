@@ -6,7 +6,10 @@ const {
   resendOtp,
   checkStatus,
   login,  // ⭐ Add this
-  checkForAdmin
+  checkForAdmin,
+  resetPassword,
+  verifyResetOtp,
+  forgotPassword
 } = require("../controllers/authController");
 const authenticate = require("../middleware/auth");
 
@@ -19,6 +22,11 @@ router.post("/resend-otp", resendOtp);
 router.post("/login", login);  // ⭐ Add this
 router.get("/check-status", checkStatus);
 router.get("/admin-exists",checkForAdmin);
+
+router.post("/forgot-password", forgotPassword);
+router.post("/verify-reset-otp", verifyResetOtp);
+router.post("/reset-password", resetPassword);
+
 
 // ⭐ Protected route example (use authenticate middleware)
 router.get("/me", authenticate, (req, res) => {

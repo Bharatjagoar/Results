@@ -81,3 +81,18 @@
 .signup-link a:hover {
   text-decoration: underline;
 }
+
+.forgot-link {
+  margin-top: 12px;
+  text-align: center;
+  /* ✅ CENTER IT */
+  font-size: 14px;
+  color: #667eea;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+  color: #4c51bf;
+  text-decoration: underline;
+}

@@ -15,6 +15,10 @@ import PublicRoute from "./components/PublicRoute.jsx";
 import ClassRecordsPage from "./pages/ClassRecord.jsx";
 import ActivityLogPage from "./pages/ActivityLogPage.jsx";
 import ReportCard from "./components/ReportCard.jsx";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyResetOtp from "./pages/VerifyResetOtp";
+import ResetPassword from "./pages/ResetPassword.jsx";
+
 
 function App() {
   return (
@@ -80,6 +84,9 @@ function App() {
           {/* OTP verification - special case */}
           <Route path="/verify-otp" element={<VerifyOTP />} />
           <Route path="/checkit" element={<ReportCard/>}/>
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-reset-otp" element={<VerifyResetOtp />} /> 
+          <Route path="reset-password" element={<ResetPassword/>}/>
         </Routes>
       </BrowserRouter>
       <ToastContainer position="top-center" />

@@ -100,6 +100,10 @@ const Login = () => {
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>
+          <p className="forgot-link" onClick={() => navigate("/forgot-password")}>
+            Forgot Password?
+          </p>
+
 
           <p className="signup-link">
             Don't have an account? <Link to="/signup">Sign up here</Link>

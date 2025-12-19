@@ -2,6 +2,7 @@ const TempTeacher = require("../models/TempTeacher.js")
 const Teacher = require("../models/Teacher.js")
 const sendEmail = require("../utils/sendEmail.js");
 const { generateToken } = require("../utils/jwt");
+const PasswordReset = require("../models/PasswordReset");
 
 // ─────────────────────────────────────────────
 // 1. Signup → Generate OTP
@@ -326,3 +327,108 @@ module.exports.checkForAdmin = async (req, res) => {
     })
   }
 }
+
+module.exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Always send same response (security)
+    const teacher = await Teacher.findOne({ email });
+
+    if (!teacher) {
+      return res.json({
+        success: true,
+        message: "If the email exists, OTP has been sent"
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Remove old OTPs
+    await PasswordReset.deleteMany({ email });
+
+    await PasswordReset.create({
+      email,
+      otp,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000)
+    });
+
+    await sendEmail(email, `Your password reset OTP is ${otp}`);
+
+    return res.json({
+      success: true,
+      message: "If the email exists, OTP has been sent"
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+
+module.exports.verifyResetOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const record = await PasswordReset.findOne({ email, otp });
+
+    if (!record) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP"
+      });
+    }
+
+    record.verified = true;
+    await record.save();
+
+    return res.json({
+      success: true,
+      message: "OTP verified"
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
+
+module.exports.resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    const record = await PasswordReset.findOne({ email, verified: true });
+
+    if (!record) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized password reset"
+      });
+    }
+
+    const teacher = await Teacher.findOne({ email });
+
+    teacher.password = newPassword; // hashing via pre-save
+    await teacher.save();
+
+    // Invalidate OTP
+    await PasswordReset.deleteMany({ email });
+
+    return res.json({
+      success: true,
+      message: "Password reset successful"
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
