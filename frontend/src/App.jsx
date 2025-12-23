@@ -16,6 +16,7 @@ import ClassRecordsPage from "./pages/ClassRecord.jsx";
 import ActivityLogPage from "./pages/ActivityLogPage.jsx";
 import ReportCard from "./components/ReportCard.jsx";
 import ForgotPassword from "./pages/ForgotPassword";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 import VerifyResetOtp from "./pages/VerifyResetOtp";
 import ResetPassword from "./pages/ResetPassword.jsx";
 
@@ -87,6 +88,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/verify-reset-otp" element={<VerifyResetOtp />} /> 
           <Route path="reset-password" element={<ResetPassword/>}/>
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </BrowserRouter>
       <ToastContainer position="top-center" />

@@ -377,7 +377,7 @@ const updateStudent = async (req, res) => {
       { new: true, runValidators: true }
     ).lean();
 
-    console.log(id)
+    console.log(updateData,"for the windows alert");
     // ⭐ Log the activity
     await ActivityLogService.logMarksUpdate({
       teacherId: req.user.id,

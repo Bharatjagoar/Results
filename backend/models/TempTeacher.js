@@ -2,35 +2,34 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 const TempTeacherSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true
+  username: String,
+  email: String,
+  isAdmin: Boolean,
+
+  // ⭐ NEW
+  classTeacherOf: {
+    className: {
+      type: String,
+      required: true
+    },
+    section: {
+      type: String,
+      required: true,
+      uppercase: true,
+      trim: true
+    }
   },
-  email: {
-    type: String,
-    required: true
-  },
-  isAdmin:{
-    type:Boolean,
-    required:true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  otp: {
-    type: String,
-    required: true
-  },
-  expiresAt: {
-    type: Date,
-    required: true
-  },
+
+  password: String,
+  otp: String,
+
+  expiresAt: Date,
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
+
 
 // ⭐ Hash password before saving - Modern Mongoose syntax (no next needed)
 TempTeacherSchema.pre("save", async function() {

@@ -1,6 +1,10 @@
+/* =========================
+   Auth Page Layout
+   ========================= */
+
 .auth-container {
   width: 100%;
-  height: 100vh;
+  min-height: 100vh; 
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
@@ -8,51 +12,85 @@
   padding: 20px;
 }
 
+/* =========================
+   Auth Card
+   ========================= */
+
 .auth-box {
   width: 100%;
-  max-width: 400px;
-  background: #fff;
-  padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-width: 420px;
+  background: #ffffff;
+  padding: 36px 40px;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
 .auth-box h2 {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 22px;
   font-weight: 600;
   color: #333;
   font-size: 24px;
 }
 
+/* =========================
+   Input Groups
+   ========================= */
+
 .input-group {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   display: flex;
   flex-direction: column;
 }
 
 .input-group label {
-  display: block;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   font-size: 14px;
-  color: #555;
-  font-weight: 500;
+  font-weight: 600;
+  color: #222;
+  /* darker & consistent */
+  letter-spacing: 0.2px;
 }
+
 
 .input-group input {
   width: 100%;
-  padding: 12px;
+  padding: 10px 12px;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 14px;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .input-group input:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
 }
+
+/* =========================
+   Academic Fields Styling
+   (Class & Section / Stream)
+   ========================= */
+
+.input-group.academic label {
+  font-weight: 600;
+  color: #444;
+}
+
+.input-group.academic input {
+  background: #fafbff;
+  border-color: #cfd6ff;
+}
+
+.input-group.academic input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* =========================
+   Password Fields
+   ========================= */
 
 .password-wrapper {
   position: relative;
@@ -62,7 +100,7 @@
 
 .password-wrapper input {
   width: 100%;
-  padding-right: 40px;
+  padding-right: 42px;
 }
 
 .toggle-password {
@@ -71,57 +109,22 @@
   cursor: pointer;
   font-size: 18px;
   user-select: none;
+  opacity: 0.7;
 }
 
-
-.auth-btn {
-  width: 100%;
-  padding: 12px;
-  margin-top: 8px;
-  background: #667eea;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s ease;
+.toggle-password:hover {
+  opacity: 1;
 }
 
-.auth-btn:hover {
-  background: #5568d3;
-}
-
-.auth-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.auth-footer {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 14px;
-  color: #666;
-}
-
-.auth-footer span {
-  color: #667eea;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.auth-footer span:hover {
-  text-decoration: underline;
-  color: #5568d3;
-}
+/* =========================
+   Error Handling
+   ========================= */
 
 .error-text {
   color: #e74c3c;
   font-size: 13px;
-  margin-top: 5px;
-  margin-bottom: -10px;
+  margin-top: 6px;
+  margin-bottom: -4px;
   display: block;
 }
 
@@ -132,46 +135,69 @@
 
 .error-input:focus {
   border-color: #e74c3c !important;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.15) !important;
 }
 
-.loader {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #667eea;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  animation: spin 0.8s linear infinite;
-  margin: auto;
+/* =========================
+   Submit Button
+   ========================= */
+
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.1s ease;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+.auth-btn:hover {
+  background: #5568d3;
 }
 
-/* Responsive adjustments */
-@media (max-width: 480px) {
-  .auth-box {
-    padding: 30px 25px;
-  }
-
-  .auth-box h2 {
-    font-size: 22px;
-  }
+.auth-btn:active {
+  transform: scale(0.98);
 }
 
-/* ============================= */
-/* Admin Signup Checkbox Styling */
-/* ============================= */
+.auth-btn:disabled {
+  background: #c7c7c7;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* =========================
+   Footer
+   ========================= */
+
+.auth-footer {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 14px;
+  color: #666;
+}
+
+.auth-footer span {
+  color: #667eea;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.auth-footer span:hover {
+  text-decoration: underline;
+  color: #5568d3;
+}
+
+/* =========================
+   Admin Signup Section
+   ========================= */
 
 .admin-option {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   padding: 10px 12px;
   background: #f7f8ff;
   border: 1px dashed #667eea;
@@ -194,12 +220,41 @@
   cursor: pointer;
 }
 
-.admin-checkbox span {
-  line-height: 1.4;
-}
-
 .admin-checkbox small {
   color: #777;
   font-size: 12px;
-  margin-left: 4px;
+}
+
+/* =========================
+   Loader (optional)
+   ========================= */
+
+.loader {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  animation: spin 0.8s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================
+   Responsive
+   ========================= */
+
+@media (max-width: 480px) {
+  .auth-box {
+    padding: 30px 24px;
+  }
+
+  .auth-box h2 {
+    font-size: 22px;
+  }
 }

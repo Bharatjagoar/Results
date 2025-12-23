@@ -2,6 +2,7 @@ const { verifyToken } = require("../utils/jwt");
 const Teacher = require("../models/Teacher");
 
 const authenticate = async (req, res, next) => {
+  // console.log("hellwo")
   try {
     // Get token from header
     const token = req.headers.authorization?.split(" ")[1]; // Bearer TOKEN

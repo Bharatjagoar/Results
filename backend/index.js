@@ -13,6 +13,7 @@ dotenv.config();
 const studentRoutes = require('./routes/studentRoutes');
 const authRoutes = require('./routes/authRoutes');
 const activityRoutes = require("./routes/activity");
+const adminROutes = require("./routes/adminRoutes");
 
 // Initialize Express app
 const app = express();
@@ -45,14 +46,15 @@ app.get('/', (req, res) => {
 app.use('/api/students', studentRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/activity", activityRoutes);
+app.use("/api/admin", adminROutes)
 
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    message: 'Something went wrong!', 
-    error: err.message 
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: err.message
   });
 });
 

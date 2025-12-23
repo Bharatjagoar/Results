@@ -10,58 +10,72 @@ const PasswordReset = require("../models/PasswordReset");
 
 module.exports.signup = async (req, res) => {
   try {
-    const { username, email, password, isAdmin } = req.body;
-    console.log(req.body)
+    const { username, email, password, isAdmin, className, section } = req.body;
 
-    // 1️⃣ Check if email already exists in Teacher collection
-    const existingTeacher = await Teacher.findOne({ email });
-
-    // 2️⃣ Check if email already exists in TempTeacher (pending OTP verification)
-    const existingTemp = await TempTeacher.findOne({ email });
-
-    if (existingTeacher || existingTemp) {
-      console.log("heeeeeeeeeeeeeeeeerrrrrrrrrrrrrrrrrrrrreeeeeeeeeeeeeeeeeee");
+    if (!className || !section) {
       return res.status(400).json({
         success: false,
-        message: "Email already exists. Please login or use a different email."
+        message: "Class and Section are required"
       });
     }
 
-    // 🔐 BACKEND CHECK
-    const adminExists = await Teacher.exists({ isAdmin: true });
+    // 🔍 Check existing teacher
+    const existingTeacher = await Teacher.findOne({ email });
+    const existingTemp = await TempTeacher.findOne({ email });
 
-    let finalIsAdmin = false;
-
-    if (!adminExists && isAdmin === true) {
-      finalIsAdmin = true; // first admin allowed
+    if (existingTeacher || existingTemp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already exists"
+      });
     }
 
-    // 3️⃣ Generate OTP
+    // 🔐 Admin logic
+    const adminExists = await Teacher.exists({ isAdmin: true });
+    const finalIsAdmin = !adminExists && isAdmin === true;
+
+    // 🔁 OPTIONAL (Recommended):
+    // Ensure only ONE class teacher per class+section
+    const classTeacherExists = await Teacher.findOne({
+      "classTeacherOf.className": className,
+      "classTeacherOf.section": section.toUpperCase()
+    });
+
+    if (classTeacherExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Class teacher already assigned for this class"
+      });
+    }
+
+    // 🔢 Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
 
-    // 4️⃣ Create temporary teacher entry for OTP verification
     await TempTeacher.create({
       username,
       email,
-      password, // we will hash later
+      password,
       otp,
       isAdmin: finalIsAdmin,
-      expiresAt: new Date(Date.now() + 3 * 60 * 1000), // expires in 3 mins
+      classTeacherOf: {
+        className,
+        section
+      },
+      expiresAt: new Date(Date.now() + 3 * 60 * 1000)
     });
-    console.log("helow")
-    // 5️⃣ Send OTP email
+
     await sendEmail(email, otp);
 
     return res.json({
       success: true,
-      message: "OTP sent to email.",
+      message: "OTP sent to email"
     });
 
   } catch (error) {
-    console.log("Signup Error:", error);
+    console.error(error);
     return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
+      message: "Internal Server Error"
     });
   }
 };
@@ -87,54 +101,47 @@ module.exports.verifyOtp = async (req, res) => {
     const record = await TempTeacher.findOne({ email });
 
     if (!record)
-      return res.json({ success: false, message: "OTP expired or cancelled" });
+      return res.json({ success: false, message: "OTP expired" });
 
     if (record.otp !== otp)
       return res.json({ success: false, message: "Invalid OTP" });
 
-    // ⭐ Create teacher instance
-    const teacher = new Teacher({
+    const teacher = await Teacher.create({
       username: record.username,
       email: record.email,
+      password: record.password, // already hashed
       isAdmin: record.isAdmin,
-      password: record.password, // Already hashed
+      classTeacherOf: record.classTeacherOf
     });
-
-    // ⭐ Mark password as not modified to skip re-hashing
-    teacher.markModified('password');
-    teacher.$isNew = false; // Prevent pre-save hook
-
-    // Actually, better approach:
-    await Teacher.create({
-      username: record.username,
-      email: record.email,
-      isAdmin: record.isAdmin,
-      password: record.password
-    });
-
-    // Fetch the created teacher
-    const createdTeacher = await Teacher.findOne({ email });
 
     await TempTeacher.deleteOne({ email });
 
-    // ⭐ Generate JWT token
-    const token = generateToken(createdTeacher._id, createdTeacher.email, createdTeacher.isAdmin);
+    const token = generateToken(
+      teacher._id,
+      teacher.email,
+      teacher.isAdmin
+    );
 
     return res.json({
       success: true,
       message: "Verification successful",
       token,
       user: {
-        id: createdTeacher._id,
-        username: createdTeacher.username,
-        email: createdTeacher.email
+        id: teacher._id,
+        username: teacher.username,
+        email: teacher.email,
+        classTeacherOf: teacher.classTeacherOf
       }
     });
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 };
+
 
 // ─────────────────────────────────────────────
 // 3. Cancel signup
@@ -314,7 +321,7 @@ module.exports.checkForAdmin = async (req, res) => {
         message: "Admin does not exist"
       })
     }
-    
+
     return res.status(200).json({
       adminExists: true,
       message: "Admin exist"
