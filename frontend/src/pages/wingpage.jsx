@@ -2,12 +2,14 @@ import React from "react";
 import "./WingPage.css";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
 const WingPage = () => {
   const navigate = useNavigate();
   const { wingName } = useParams();
+  const { user } = useSelector((state) => state.auth);
 
-  // Define classes for each wing
   const wingData = {
     primary: {
       title: "Primary Wing",
@@ -45,7 +47,6 @@ const WingPage = () => {
 
   const currentWing = wingData[wingName];
 
-  // If wing doesn't exist, show error
   if (!currentWing) {
     return (
       <>
@@ -68,7 +69,21 @@ const WingPage = () => {
             <div
               key={index}
               className="wing-card"
-              onClick={() => navigate(cls.path)}
+              onClick={() => {
+                if (user?.classTeacherOf?.className) {
+                  const allowedClass = user.classTeacherOf.className;
+                  const clickedClass = cls.path.split("/").pop();
+
+                  if (clickedClass !== allowedClass) {
+                    toast.error(
+                      "Access denied: Non-class teacher entry prohibited"
+                    );
+                    return;
+                  }
+                }
+
+                navigate(cls.path);
+              }}
             >
               {cls.title}
             </div>

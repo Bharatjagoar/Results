@@ -8,6 +8,7 @@ import Navbar from "../components/Navbar";
 import { toast } from "react-toastify";
 // import { transformDataForBackend } from "./utils";
 import { useNavigate } from "react-router-dom";
+import { extractClassAndSection } from "./utils";
 
 
 const formatDateDDMMYYYY = (dateObj) => {
@@ -284,6 +285,47 @@ const ExcelUploadPage = () => {
   // ⭐ Update your handleSubmit function
   const handleSubmit = async () => {
     const transformedData = transformDataForBackend();
+    // ===============================
+    // 🔍 DETECT CLASS & SECTION FROM EXCEL
+    // ===============================
+
+    if (!fullRawData.length) {
+      toast.error("Excel file is empty");
+      return;
+    }
+
+    // Class column = index 4
+    const rawClassValue = fullRawData[0][4];
+    const { className: excelClass, section: excelSection } = extractClassAndSection(rawClassValue);
+
+    if (!excelClass || !excelSection) {
+      toast.error("Unable to detect class and section from Excel");
+      return;
+    }
+
+    console.log(excelClass, excelSection);
+    // ===============================
+    // 🔐 CLASS TEACHER AUTHORIZATION
+    // ===============================
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (user?.classTeacherOf) {
+      const allowedClass = user.classTeacherOf.className;
+      const allowedSection = user.classTeacherOf.section;
+
+      if (
+        excelClass !== allowedClass ||
+        excelSection !== allowedSection
+      ) {
+        toast.error(
+          `Access denied: You are class teacher of ${allowedClass}-${allowedSection} only`
+        );
+        return; // ❌ STOP — no backend call
+      }
+    }
+
+
     console.log("📄 TRANSFORMED DATA FOR BACKEND:", JSON.stringify(transformedData, null, 2));
 
     // ⭐ VALIDATION BEFORE SENDING
@@ -502,7 +544,7 @@ const ExcelUploadPage = () => {
                         let date;
                         if (col === "D.O.B") {
                           date = excelDateToJS(row[col]);
-                        }else{
+                        } else {
                           date = row[col];
                         }
                         return (<td key={colIndex}>

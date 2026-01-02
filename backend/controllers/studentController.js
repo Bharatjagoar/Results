@@ -91,6 +91,7 @@ async function ensureClassAndSection(className, sectionName) {
 const bulkUploadStudents = async (req, res) => {
   try {
     const { classId, students } = req.body;
+    
     console.log(extractClassAndSection(students[0].class));
     let { className, section } = extractClassAndSection(students[0].class);
     const resultofclass = await ensureClassAndSection(className, section);

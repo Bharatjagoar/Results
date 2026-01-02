@@ -297,7 +297,9 @@ module.exports.login = async (req, res) => {
       user: {
         id: teacher._id,
         username: teacher.username,
-        email: teacher.email
+        email: teacher.email,
+        isAdmin:teacher.isAdmin,
+        classTeacherOf:teacher.classTeacherOf
       }
     });
 

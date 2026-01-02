@@ -200,5 +200,26 @@ const calculateResultFromSubjects = (subjects = {}) => {
 };
 
 
+const extractClassAndSection = (rawValue) => {
+  if (!rawValue) return { className: null, section: null };
 
-export {transformDataForBackend,calculateGrade,calculateResultFromSubjects,calculateGrandTotalAndMax};
+  const normalized = rawValue
+    .toString()
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+  // Handles: "9-A", "9 A", "9A"
+  const match = normalized.match(/^(\d{1,2})\s*-?\s*([A-Z])$/);
+
+  if (!match) return { className: null, section: null };
+
+  return {
+    className: match[1],
+    section: match[2]
+  };
+};
+
+
+
+export {transformDataForBackend,calculateGrade,calculateResultFromSubjects,calculateGrandTotalAndMax,extractClassAndSection};

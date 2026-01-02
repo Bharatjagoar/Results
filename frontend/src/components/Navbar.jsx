@@ -8,6 +8,8 @@ import "./Navbar.css";
 const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Get user from redux
   const { user } = useSelector((state) => state.auth);
 
   const handleLogout = () => {
@@ -16,10 +18,10 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  // Get user initials for avatar
+  // Get initials from username
   const getInitials = (name) => {
     if (!name) return "U";
-    const parts = name.split(" ");
+    const parts = name.trim().split(" ");
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
@@ -29,18 +31,41 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <div className="navbar-brand" onClick={() => navigate("/")}>
+        
+        {/* Brand */}
+        <div
+          className="navbar-brand"
+          onClick={() => navigate("/")}
+        >
           <span className="brand-text">School Portal</span>
         </div>
 
+        {/* Right side */}
         <div className="navbar-right">
+
+          {/* ✅ Admin Dashboard button (ADMIN ONLY) */}
+          {user?.isAdmin && (
+            <button
+              className="admin-btn"
+              onClick={() => navigate("/admin")}
+            >
+             Admin Dashboard
+            </button>
+          )}
+
+          {/* User Avatar */}
           <div className="user-avatar">
             {getInitials(user?.username)}
           </div>
-          
-          <button className="logout-btn" onClick={handleLogout}>
+
+          {/* Logout */}
+          <button
+            className="logout-btn"
+            onClick={handleLogout}
+          >
             Logout
           </button>
+
         </div>
       </div>
     </nav>
