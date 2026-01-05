@@ -58,12 +58,45 @@ function extractClassAndSection(input) {
 
 
 
+const verifyMarks = async (classId,section) => {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      toast.error("Authentication token missing");
+      return;
+    }
+
+    await axios.put(
+      "http://localhost:5000/api/class-verification/verify",
+      {
+        className:classId,
+        section
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    toast.success(`Marks finalized for Class ${classId} ${section}`);
+  } catch (error) {
+    console.error(error);
+
+    toast.error(
+      error.response?.data?.message || "Failed to verify marks"
+    );
+  }
+};
+
+
 
 
 const ClassRecordsPage = () => {
   const { classId } = useParams();
   const reportRef = useRef();
-
+  console.log(classId);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -73,6 +106,13 @@ const ClassRecordsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [existingsections, setexistingSection] = useState([]);
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const isClassTeacher =
+    user?.classTeacherOf &&
+    user.classTeacherOf.className === classId &&
+    user.classTeacherOf.section === section;
 
   // =========================
   // FETCH STUDENTS
@@ -164,10 +204,13 @@ const ClassRecordsPage = () => {
     return (
       <>
         <Navbar />
+
+
         <div className="records-container empty-state">
           <h1 className="records-title">
             Class {classId} — Select Section
           </h1>
+
 
           <div className="empty-card">
             <h2>Select Section</h2>
@@ -286,6 +329,18 @@ const ClassRecordsPage = () => {
         <h1 className="records-title">
           Class {classId} {section} — Student Records
         </h1>
+
+        {isClassTeacher && (
+          <div className="records-action-bar">
+            <button
+              className="primary-btn verifyButton"
+              onClick={()=>verifyMarks(classId,section)}
+            >
+              ✅ Verify / Finalize Marks
+            </button>
+
+          </div>
+        )}
 
         <div className="records-table-wrapper">
           <table className="records-table">

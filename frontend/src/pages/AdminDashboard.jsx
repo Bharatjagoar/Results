@@ -1,24 +1,44 @@
 import { useState } from "react";
-import TeacherSearch from "../components/TeacherSearch";
-import ActivityList from "../components/ActivityList";
-// import {Nav}
 import Navbar from "../components/Navbar";
-import "./AdminDashboard.css"
+import SearchEmployeeTab from "../components/admin/SearchEmployeeTab";
+import MarksVerificationTab from "../components/admin/MarksVerificationTab";
+
+import "./AdminDashboard.css";
+
 const AdminDashboard = () => {
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [activeTab, setActiveTab] = useState("teacher");
 
   return (
     <>
       <Navbar />
+
       <div className="admin-container">
         <div className="admin-inner">
           <h2>Admin Dashboard</h2>
-          <TeacherSearch onSelect={setSelectedTeacher} />
-          <ActivityList teacher={selectedTeacher} />
+
+          <div className="admin-tabs">
+            <button
+              className={activeTab === "teacher" ? "active" : ""}
+              onClick={() => setActiveTab("teacher")}
+            >
+              Search Employee
+            </button>
+
+            <button
+              className={activeTab === "verification" ? "active" : ""}
+              onClick={() => setActiveTab("verification")}
+            >
+              Marks Verification
+            </button>
+          </div>
+
+          {activeTab === "teacher" && <SearchEmployeeTab />}
+
+          {activeTab === "verification" && <MarksVerificationTab />}
+
         </div>
       </div>
     </>
-
   );
 };
 

@@ -153,6 +153,17 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+.records-action-bar {
+  max-width: 1200px;          /* SAME as table */
+  margin: 0 auto 20px auto;  /* center container, space below */
+  display: flex;
+  justify-content: flex-end; /* push button to the right */
+  /* background-color: yellow; */
+}
+
+
+
+
 @media (max-width: 768px) {
   .records-table-wrapper {
     padding: 15px;

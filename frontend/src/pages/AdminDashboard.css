@@ -23,6 +23,27 @@
   animation: fadeIn 0.4s ease-in-out;
 }
 
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.admin-tabs button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #e2e8f0;
+  font-weight: 500;
+}
+
+.admin-tabs button.active {
+  background: #667eea;
+  color: white;
+}
+
+
 /* ===============================
    Heading
    =============================== */

@@ -8,8 +8,11 @@ const classSchema = mongoose.Schema({
     section: { 
         type: [String],
         default:[]
+    },
+    Marksverified:{
+        type:Boolean,
+        default:false
     }
-
 },{timestamps:true});
 
 
