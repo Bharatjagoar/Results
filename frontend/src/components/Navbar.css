@@ -1,7 +1,8 @@
+/* ================= NAVBAR BASE ================= */
+
 .navbar {
   width: 100%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  /* semi-transparent */
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -19,6 +20,8 @@
   padding: 15px 30px;
 }
 
+/* ================= BRAND ================= */
+
 .navbar-brand {
   cursor: pointer;
 }
@@ -28,13 +31,19 @@
   font-weight: 700;
   color: white;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
+
+/* ================= RIGHT SIDE ================= */
 
 .navbar-right {
   display: flex;
   align-items: center;
   gap: 15px;
+  flex-wrap: nowrap;
 }
+
+/* ================= USER AVATAR ================= */
 
 .user-avatar {
   width: 40px;
@@ -49,46 +58,12 @@
   color: white;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   border: 2px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
 }
 
-.logout-btn {
-  padding: 8px 20px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
+/* ================= BUTTONS ================= */
 
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.logout-btn:active {
-  transform: translateY(0);
-}
-
-@media (max-width: 768px) {
-  .navbar-container {
-    padding: 12px 20px;
-  }
-
-  .brand-text {
-    font-size: 18px;
-  }
-
-  .logout-btn {
-    padding: 6px 15px;
-    font-size: 13px;
-  }
-}
-
+.logout-btn,
 .admin-btn {
   padding: 8px 18px;
   background: rgba(255, 255, 255, 0.25);
@@ -100,14 +75,77 @@
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  white-space: nowrap;
 }
 
+.logout-btn:hover,
 .admin-btn:hover {
   background: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+.logout-btn:active,
 .admin-btn:active {
   transform: translateY(0);
+}
+
+/* ================= TABLET ================= */
+
+@media (max-width: 1024px) {
+  .navbar-container {
+    padding: 12px 20px;
+  }
+
+  .brand-text {
+    font-size: 20px;
+  }
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 768px) {
+  .navbar-container {
+    padding: 12px 16px;
+  }
+
+  .brand-text {
+    font-size: 18px;
+  }
+
+  .navbar-right {
+    gap: 10px;
+  }
+
+  .logout-btn,
+  .admin-btn {
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+}
+
+/* ================= VERY SMALL DEVICES ================= */
+
+@media (max-width: 480px) {
+  .navbar-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .navbar-right {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .brand-text {
+    font-size: 17px;
+  }
 }

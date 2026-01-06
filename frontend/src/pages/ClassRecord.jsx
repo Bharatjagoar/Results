@@ -58,7 +58,7 @@ function extractClassAndSection(input) {
 
 
 
-const verifyMarks = async (classId,section) => {
+const verifyMarks = async (classId, section, setIsVerified) => {
   try {
     const token = localStorage.getItem("authToken");
 
@@ -70,7 +70,7 @@ const verifyMarks = async (classId,section) => {
     await axios.put(
       "http://localhost:5000/api/class-verification/verify",
       {
-        className:classId,
+        className: classId,
         section
       },
       {
@@ -79,6 +79,7 @@ const verifyMarks = async (classId,section) => {
         }
       }
     );
+    setIsVerified(true);
 
     toast.success(`Marks finalized for Class ${classId} ${section}`);
   } catch (error) {
@@ -106,6 +107,8 @@ const ClassRecordsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [existingsections, setexistingSection] = useState([]);
+  const [isVerified, setIsVerified] = useState(false);
+
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -150,6 +153,33 @@ const ClassRecordsPage = () => {
     }
     getsections();
   }, [])
+
+  useEffect(() => {
+    const fetchVerificationStatus = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+
+        const res = await axios.get(
+          "http://localhost:5000/api/class-verification/status",
+          {
+            params: { className: classId, section },
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        if (res.data.data.length > 0 && res.data.data[0].isVerified) {
+          setIsVerified(true);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchVerificationStatus();
+  }, [classId, section]);
+
 
   // =========================
   // EDIT HANDLERS
@@ -333,10 +363,11 @@ const ClassRecordsPage = () => {
         {isClassTeacher && (
           <div className="records-action-bar">
             <button
-              className="primary-btn verifyButton"
-              onClick={()=>verifyMarks(classId,section)}
+              disabled={isVerified}
+              className="primary-btn"
+              onClick={() => verifyMarks(classId, section, setIsVerified)}
             >
-              ✅ Verify / Finalize Marks
+              {isVerified ? "✅ Marks Finalized" : "✅ Verify / Finalize Marks"}
             </button>
 
           </div>
@@ -420,6 +451,7 @@ const ClassRecordsPage = () => {
         onClose={closeModal}
         student={selectedStudent}
         onSave={handleSave}
+        isverified={isVerified}
       />
       {selectedStudent && (
         <div style={{ position: "absolute", left: "-9999px" }}>

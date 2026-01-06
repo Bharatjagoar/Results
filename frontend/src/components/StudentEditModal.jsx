@@ -3,7 +3,7 @@ import "./StudentEditModal.css";
 import { toast } from "react-toastify";
 import { calculateGrade } from "../pages/utils";
 
-const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
+const StudentEditModal = ({ isOpen, onClose, student, onSave ,isverified}) => {
   const [editData, setEditData] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -192,38 +192,6 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
             </table>
           </div>
 
-          {/* Overall Details
-          <div className="overall-section">
-            <div className="overall-row">
-              <label>Grand Total:</label>
-              <input
-                type="number"
-                value={editData.grandTotal || 0}
-                onChange={(e) => setEditData({ ...editData, grandTotal: Number(e.target.value) })}
-              />
-            </div>
-
-            <div className="overall-row">
-              <label>Overall Grade:</label>
-              <input
-                type="text"
-                value={editData.overallGrade || ""}
-                onChange={(e) => setEditData({ ...editData, overallGrade: e.target.value })}
-              />
-            </div>
-
-            <div className="overall-row">
-              <label>Result:</label>
-              <select
-                value={editData.result || ""}
-                onChange={(e) => setEditData({ ...editData, result: e.target.value })}
-              >
-                <option value="">-- Select --</option>
-                <option value="PASS">PASS</option>
-                <option value="FAIL">FAIL</option>
-              </select>
-            </div>
-          </div> */}
         </div>
 
         {/* Modal Footer */}
@@ -232,9 +200,10 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave }) => {
             Cancel
           </button>
           <button
+            // disabled = {isverified}
             className="save-modal-btn"
             onClick={handleSave}
-            disabled={hasErrors()}
+            disabled={ isverified||hasErrors()}
           >
             Save Changes
           </button>

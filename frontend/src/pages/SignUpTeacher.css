@@ -249,6 +249,22 @@
    Responsive
    ========================= */
 
+/* Tablets */
+@media (max-width: 768px) {
+  .auth-box {
+    padding: 32px 28px;
+  }
+
+  .auth-box h2 {
+    font-size: 22px;
+  }
+
+  .auth-btn {
+    font-size: 15px;
+    padding: 11px;
+  }
+}
+
 @media (max-width: 480px) {
   .auth-box {
     padding: 30px 24px;
@@ -256,5 +272,86 @@
 
   .auth-box h2 {
     font-size: 22px;
+  }
+}
+
+/* Mobile (375px target) */
+@media (max-width: 375px) {
+  .auth-container {
+    padding: 14px;
+  }
+
+  .auth-box {
+    padding: 26px 20px;
+    border-radius: 10px;
+  }
+
+  .auth-box h2 {
+    font-size: 20px;
+    margin-bottom: 18px;
+  }
+
+  .input-group {
+    margin-bottom: 12px;
+  }
+
+  .input-group label {
+    font-size: 13px;
+  }
+
+  .input-group input {
+    font-size: 13px;
+    padding: 9px 10px;
+  }
+
+  .password-wrapper input {
+    padding-right: 38px;
+  }
+
+  .toggle-password {
+    font-size: 16px;
+    right: 10px;
+  }
+
+  .error-text {
+    font-size: 12px;
+  }
+
+  .auth-btn {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .auth-footer {
+    font-size: 13px;
+    margin-top: 14px;
+  }
+
+  .admin-option {
+    padding: 8px 10px;
+  }
+
+  .admin-checkbox {
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  .admin-checkbox small {
+    font-size: 11px;
+  }
+}
+
+/* Very small devices (≤320px) */
+@media (max-width: 320px) {
+  .auth-box {
+    padding: 22px 18px;
+  }
+
+  .auth-box h2 {
+    font-size: 18px;
+  }
+
+  .auth-btn {
+    font-size: 13px;
   }
 }
