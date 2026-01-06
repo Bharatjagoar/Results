@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import "./StudentEditModal.css";
 import { toast } from "react-toastify";
 import { calculateGrade } from "../pages/utils";
+import { extractClassAndSection } from "../pages/utils";
 
-const StudentEditModal = ({ isOpen, onClose, student, onSave ,isverified}) => {
+const StudentEditModal = ({ isOpen, onClose, student, onSave, isverified }) => {
   const [editData, setEditData] = useState({});
   const [errors, setErrors] = useState({});
-
+  console.log("here ", student)
   useEffect(() => {
     if (isOpen && student) {
       setEditData(JSON.parse(JSON.stringify(student)));
@@ -15,6 +16,13 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave ,isverified}) => {
   }, [isOpen, student]);
 
   if (!isOpen || !student) return null;
+  const teacherData = JSON.parse(localStorage.getItem("user"));
+  const teacherClass = teacherData?.classTeacherOf;
+  const studentClass = extractClassAndSection(student?.class);
+  const isSameClassTeacher =
+    studentClass.className === teacherClass?.className &&
+    studentClass.section === teacherClass?.section;
+
 
   // Validation function
   const validateMarks = (subject, field, value) => {
@@ -200,13 +208,17 @@ const StudentEditModal = ({ isOpen, onClose, student, onSave ,isverified}) => {
             Cancel
           </button>
           <button
-            // disabled = {isverified}
             className="save-modal-btn"
             onClick={handleSave}
-            disabled={ isverified||hasErrors()}
+            disabled={
+              isverified ||
+              hasErrors() ||
+              !isSameClassTeacher
+            }
           >
             Save Changes
           </button>
+
         </div>
       </div>
     </div>
