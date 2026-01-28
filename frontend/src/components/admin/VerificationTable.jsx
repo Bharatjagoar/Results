@@ -1,4 +1,5 @@
 import axios from "axios";
+import { api } from "../../pages/utils";
 import "./VerificationTable.css";
 
 
@@ -8,7 +9,7 @@ const VerificationTable = ({ records, onRefresh }) => {
 
       const token = localStorage.getItem("authToken");
     try {
-      await axios.put(
+      await api.put(
         "http://localhost:5000/api/class-verification/reopen",
         { className, section },
         {

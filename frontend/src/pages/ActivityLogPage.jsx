@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { api } from "./utils";
 import Navbar from "../components/Navbar";
 import { toast } from "react-toastify";
 import "./ActivityLogPage.css";
@@ -16,7 +17,7 @@ const ActivityLogPage = () => {
     try {
       const token = localStorage.getItem("authToken");
 
-      const res = await axios.get(
+      const res = await api.get(
         "http://localhost:5000/api/activity/my",
         {
           headers: {

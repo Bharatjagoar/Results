@@ -4,6 +4,7 @@ import "./ExcelUploadPage.css";
 import StudentDetailsModal from "./StudentDetailsModal";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { api } from "./utils";
 import Navbar from "../components/Navbar";
 import { toast } from "react-toastify";
 // import { transformDataForBackend } from "./utils";
@@ -353,7 +354,7 @@ const ExcelUploadPage = () => {
     try {
       const token = localStorage.getItem("authToken");
 
-      const response = await axios.post(
+      const response = await api.post(
         "http://localhost:5000/api/students/bulk",
         {
           classId: classId,

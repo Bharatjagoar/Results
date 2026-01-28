@@ -1,4 +1,5 @@
 const OTP_STORAGE_KEY = "OTP_STORAGE_KEY";
+import axios from "axios";
 
 // improved transform - uses tableHeaders + filteredIndices (from handleFileUpload)
 const transformDataForBackend = () => {
@@ -222,4 +223,10 @@ const extractClassAndSection = (rawValue) => {
 
 
 
-export {transformDataForBackend,calculateGrade,calculateResultFromSubjects,calculateGrandTotalAndMax,extractClassAndSection};
+const api = axios.create({
+  baseURL: import.meta.env.MODE=="development"?"http://localhost:5000/":"https://rdjps-resultportal.onrender.com/",
+});
+
+
+
+export { transformDataForBackend, calculateGrade, calculateResultFromSubjects, calculateGrandTotalAndMax, extractClassAndSection, api };

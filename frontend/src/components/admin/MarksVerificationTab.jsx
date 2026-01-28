@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { api } from "../../pages/utils";
 import ClassSectionSearch from "./ClassSectionSearch";
 import VerificationTable from "./VerificationTable";
 
@@ -18,7 +19,7 @@ const MarksVerificationTab = () => {
     try {
       setLoading(true);
 
-      const res = await axios.get(
+      const res = await api.get(
         "http://localhost:5000/api/class-verification/status",
         {
           headers: {
@@ -40,7 +41,7 @@ const MarksVerificationTab = () => {
     try {
       setLoading(true);
 
-      const res = await axios.get(
+      const res = await api.get(
         "http://localhost:5000/api/class-verification/status",
         {
           params: { className, section },

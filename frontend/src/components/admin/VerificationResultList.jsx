@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { api } from "../../pages/utils";
 import "./VerificationResultList.css";
 
 const VerificationResultList = ({ query }) => {
@@ -13,7 +14,7 @@ const VerificationResultList = ({ query }) => {
         setLoading(true);
         setError("");
 
-        const res = await axios.get(
+        const res = await api.get(
           `http://localhost:5000/api/verification/status`,
           {
             params: {

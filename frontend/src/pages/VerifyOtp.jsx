@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./VerifyOTP.css";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { api } from "./utils";
 import { toast } from "react-toastify";
 import { saveOTPState, getOTPState, clearOTPState } from "./utils";
 
@@ -25,7 +26,7 @@ useEffect(() => {
     if (savedState) {
       // Check if this email is already verified
       try {
-        const res = await axios.get(
+        const res = await api.get(
           `http://localhost:5000/api/auth/check-status?email=${savedState.email}`
         );
         
@@ -154,7 +155,7 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      const res = await axios.post("http://localhost:5000/api/auth/verify-otp", {
+      const res = await api.post("http://localhost:5000/api/auth/verify-otp", {
         email,
         otp,
       });
@@ -191,7 +192,7 @@ useEffect(() => {
       const expiryTime = Date.now() + newTimeLeft * 1000;
       saveOTPState(email, expiryTime);
 
-      await axios.post("http://localhost:5000/api/auth/resend-otp", { email });
+      await api.post("http://localhost:5000/api/auth/resend-otp", { email });
 
       toast.success("OTP resent successfully!");
       navigate("/login");

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { api } from "./utils";
 import { toast } from "react-toastify";
 import OtpInput from "../components/OtpInput";
 import "./VerifyResetOtp.css";
@@ -28,7 +29,7 @@ const VerifyResetOtp = () => {
     try {
       setLoading(true);
 
-      const res = await axios.post(
+      const res = await api.post(
         "http://localhost:5000/api/auth/verify-reset-otp",
         { email, otp }
       );

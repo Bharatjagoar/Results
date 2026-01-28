@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { api } from "./utils.js";
 import Navbar from "../components/Navbar"
 import StudentEditModal from "../components/StudentEditModal.jsx";
 import { toast } from "react-toastify";
@@ -67,7 +68,7 @@ const verifyMarks = async (classId, section, setIsVerified) => {
       return;
     }
 
-    await axios.put(
+    await api.put(
       "http://localhost:5000/api/class-verification/verify",
       {
         className: classId,
@@ -126,7 +127,7 @@ const ClassRecordsPage = () => {
 
       const encodedClass = encodeURIComponent(fullClassName);
 
-      const res = await axios.get(
+      const res = await api.get(
         `http://localhost:5000/api/students/class/${encodedClass}`
       );
 
@@ -144,7 +145,7 @@ const ClassRecordsPage = () => {
       console.log(classId);
       const { className, section } = extractClassAndSection(classId);
       try {
-        const getsection = await axios.get("http://localhost:5000/api/students/section/" + classId);
+        const getsection = await api.get("http://localhost:5000/api/students/section/" + classId);
         console.log(getsection.data.data);
         setexistingSection(getsection?.data?.data);
       } catch (error) {
@@ -159,7 +160,7 @@ const ClassRecordsPage = () => {
       try {
         const token = localStorage.getItem("authToken");
 
-        const res = await axios.get(
+        const res = await api.get(
           "http://localhost:5000/api/class-verification/status",
           {
             params: { className: classId, section },
@@ -205,7 +206,7 @@ const ClassRecordsPage = () => {
 
       const token = localStorage.getItem("authToken");
 
-      await axios.put(
+      await api.put(
         `http://localhost:5000/api/students/${updatedStudent._id}`,
         payload,
         {
