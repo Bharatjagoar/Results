@@ -62,10 +62,15 @@ module.exports.signup = async (req, res) => {
         className,
         section
       },
-      expiresAt: new Date(Date.now() + ( 3 * 60 * 1000 ))
+      expiresAt: new Date(Date.now() + (3 * 60 * 1000))
     });
 
-    await sendEmail(email, otp);
+    await sendEmail(
+      email,
+      "Your OTP for SIGNUP RDJPS Result Portal",
+      `Your OTP is ${otp}. It is valid for 3 minutes.`
+    );
+
 
     return res.json({
       success: true,
@@ -186,7 +191,7 @@ module.exports.resendOtp = async (req, res) => {
     // save OTP in DB
     await TempTeacher.findOneAndUpdate(
       { email },
-      { otp, createdAt: Date.now(),expiresAt: new Date(Date.now() + ( 3 * 60 * 1000 )) },
+      { otp, createdAt: Date.now(), expiresAt: new Date(Date.now() + (3 * 60 * 1000)) },
       { upsert: true }
     );
 
@@ -299,8 +304,8 @@ module.exports.login = async (req, res) => {
         id: teacher._id,
         username: teacher.username,
         email: teacher.email,
-        isAdmin:teacher.isAdmin,
-        classTeacherOf:teacher.classTeacherOf
+        isAdmin: teacher.isAdmin,
+        classTeacherOf: teacher.classTeacherOf
       }
     });
 
