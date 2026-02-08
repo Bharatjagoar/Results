@@ -68,7 +68,7 @@ module.exports.signup = async (req, res) => {
     await sendEmail(
       email,
       "Your OTP for SIGNUP RDJPS Result Portal",
-      `Your OTP is ${otp}. It is valid for 3 minutes.`
+      `<h1>Your OTP is ${otp}. It is valid for 3 minutes.</h1>`
     );
 
 
@@ -157,11 +157,13 @@ module.exports.cancelSignup = async (req, res) => {
     console.log("getting cancel :: -- >> ")
     const { email } = req.body;
     await TempTeacher.deleteOne({ email });
+    setTimeout(() => {
+      return res.json({
+        success: true,
+        message: "Signup cancelled",
+      });
+    }, 2000);
 
-    return res.json({
-      success: true,
-      message: "Signup cancelled",
-    });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

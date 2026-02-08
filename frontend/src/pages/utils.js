@@ -1,6 +1,15 @@
 const OTP_STORAGE_KEY = "OTP_STORAGE_KEY";
 import axios from "axios";
 
+
+
+
+const api = axios.create({
+  baseURL: import.meta.env.MODE=="development"?"http://localhost:5000/api":"https://rdjps-resultportal.onrender.com/api",
+});
+
+
+
 // improved transform - uses tableHeaders + filteredIndices (from handleFileUpload)
 const transformDataForBackend = () => {
   // tableHeaders and filteredIndices are from state
@@ -119,8 +128,23 @@ export const getOTPState = () => {
   }
 };
 
-export const clearOTPState = () => {
-  localStorage.removeItem(OTP_STORAGE_KEY);
+export const clearOTPState = async () => {
+  try {
+    const stored = localStorage.getItem(OTP_STORAGE_KEY);
+
+    if (!stored) return;
+
+    const { email } = JSON.parse(stored);
+
+    if (email) {
+      await api.post("/auth/cancel", { email });
+    }
+
+    localStorage.removeItem(OTP_STORAGE_KEY);
+  } catch (err) {
+    console.error("Failed to cancel signup:", err);
+    localStorage.removeItem(OTP_STORAGE_KEY); // still clean UI
+  }
 };
 
 // Check if user is already verified
@@ -222,10 +246,6 @@ const extractClassAndSection = (rawValue) => {
 };
 
 
-
-const api = axios.create({
-  baseURL: import.meta.env.MODE=="development"?"http://localhost:5000/":"https://rdjps-resultportal.onrender.com/",
-});
 
 
 
