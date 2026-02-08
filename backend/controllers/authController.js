@@ -9,6 +9,7 @@ const PasswordReset = require("../models/PasswordReset");
 // ─────────────────────────────────────────────
 
 module.exports.signup = async (req, res) => {
+  console.log("yes comming in");
   try {
     const { username, email, password, isAdmin, className, section } = req.body;
 
@@ -61,7 +62,7 @@ module.exports.signup = async (req, res) => {
         className,
         section
       },
-      expiresAt: new Date(Date.now() + ( 10 * 1000 ))
+      expiresAt: new Date(Date.now() + ( 3 * 60 * 1000 ))
     });
 
     await sendEmail(email, otp);
@@ -185,7 +186,7 @@ module.exports.resendOtp = async (req, res) => {
     // save OTP in DB
     await TempTeacher.findOneAndUpdate(
       { email },
-      { otp, createdAt: Date.now() },
+      { otp, createdAt: Date.now(),expiresAt: new Date(Date.now() + ( 3 * 60 * 1000 )) },
       { upsert: true }
     );
 
